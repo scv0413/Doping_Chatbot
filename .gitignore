@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+
+# Environment variables
+.env
+
+# Data and indexes
+data/raw/
+data/processed/
+data/indexes/
+
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
