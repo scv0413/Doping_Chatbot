@@ -1,0 +1,4 @@
+source_id,file_path,title,authority,year,language,document_type,layout_type,processing_status,toc_pages
+kada_anti_doping_rules_2021_ko,data/raw/pdf/kada/kada_anti_doping_rules_2021_ko_amended_20220308.pdf,한국도핑방지규정 개정안 전문,KADA,2021,ko,rules,standard,needs_review,
+wada_prohibited_list_2026_ko,data/raw/pdf/wada/wada_prohibited_list_2026_ko.pdf,금지목록 국제표준,WADA,2026,ko,prohibited_list,table_heavy,needs_review,
+wada_isti_2021_ko_en,data/raw/pdf/wada/wada_isti_2021_ko_en.pdf,검사 및 조사 국제표준,WADA,2021,mixed,testing_standard,mixed_language,needs_review,5-8
