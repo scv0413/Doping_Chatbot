@@ -1,10 +1,9 @@
-import json
 from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel
 
-from app.play.config import settings
+from app.chat.config import settings
 from app.preprocess.manifest import load_source_manifest
 from app.preprocess.pdf_loader import (
     inspect_pdf_page_loading,

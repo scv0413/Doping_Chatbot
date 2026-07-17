@@ -38,9 +38,12 @@ TOC_PAGE_KEYWORDS = {
     "CONTENTS",
     "목차",
 }
+CONTROL_CHAR_PATTERN = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+PAGE_NUMBER_TAIL_PATTERN = re.compile(r"\n\s*\d{1,3}\s*\n\s*(?:\d{1,3}\s*){2,}\s*$")
 
 
 def normalize_text(text: str) -> str:
+    text = CONTROL_CHAR_PATTERN.sub("", text)
     return " ".join(text.split()).strip()
 
 
@@ -329,9 +332,20 @@ def split_bilingual_section_heading(
     return english_block, korean_block
 
 
+def remove_page_number_tail(text: str) -> str:
+    previous = None
+    cleaned = text.strip()
+
+    while previous != cleaned:
+        previous = cleaned
+        cleaned = PAGE_NUMBER_TAIL_PATTERN.sub("", cleaned).strip()
+
+    return cleaned
+
+
 def blocks_to_text(blocks: list[dict[str, Any]]) -> str:
     lines = [block["text"] for block in blocks if block["text"]]
-    return "\n".join(lines).strip()
+    return remove_page_number_tail("\n".join(lines))
 
 
 def clean_blocks(

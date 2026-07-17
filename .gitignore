@@ -15,7 +15,7 @@ __pycache__/
 data/raw/
 data/processed/
 data/indexes/
-logs
+logs/
 
 # OS / IDE
 .DS_Store
