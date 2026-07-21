@@ -1,0 +1,136 @@
+from enum import StrEnum
+from typing import Any
+
+from pydantic import BaseModel, Field
+
+from app.chat.answer.types import AnswerLLM
+from app.chat.drug_search.schemas import DrugSearchInput
+from app.chat.graph.graph import DEFAULT_RECURSION_LIMIT, run_chat_graph
+from app.chat.pipeline.chat_pipeline import (
+    ChatPipelineResult,
+    DrugSearcher,
+    QueryRewriter,
+    QuestionRouter,
+    Retriever,
+    run_chat_pipeline,
+)
+
+
+class ChatEngine(StrEnum):
+    GRAPH = "graph"
+    PIPELINE = "pipeline"
+
+
+class ChatRequest(BaseModel):
+    query: str = Field(min_length=1)
+    top_k: int = Field(default=3, ge=1, le=10)
+    use_llm: bool = True
+    engine: ChatEngine = ChatEngine.GRAPH
+    recursion_limit: int = Field(default=DEFAULT_RECURSION_LIMIT, ge=1, le=50)
+
+
+class CitationSummary(BaseModel):
+    chunk_id: str
+    source_id: str
+    title: str
+    page: int | None = None
+    distance: float
+
+
+class ChatResponse(BaseModel):
+    answer: str
+    route: str
+    query: str
+    engine: ChatEngine
+    citations: list[CitationSummary] = Field(default_factory=list)
+    drug_status: str | None = None
+    retrieval_attempts: int = 0
+    retrieval_retry_reason: str | None = None
+    errors: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class ChatRuntimeDependencies(BaseModel):
+    model_config = {"arbitrary_types_allowed": True}
+
+    llm: AnswerLLM | None = None
+    router: QuestionRouter | None = None
+    drug_searcher: DrugSearcher | None = None
+    retriever: Retriever | None = None
+    query_rewriter: QueryRewriter | None = None
+
+
+def run_chat(
+    request: ChatRequest | DrugSearchInput | str,
+    dependencies: ChatRuntimeDependencies | None = None,
+) -> ChatResponse:
+    resolved_request = normalize_chat_request(request)
+    dependencies = dependencies or ChatRuntimeDependencies()
+
+    runner_kwargs = build_runner_kwargs(dependencies)
+    if resolved_request.engine is ChatEngine.GRAPH:
+        result = run_chat_graph(
+            resolved_request.query,
+            top_k=resolved_request.top_k,
+            use_llm=resolved_request.use_llm,
+            recursion_limit=resolved_request.recursion_limit,
+            **runner_kwargs,
+        )
+    else:
+        result = run_chat_pipeline(
+            resolved_request.query,
+            top_k=resolved_request.top_k,
+            use_llm=resolved_request.use_llm,
+            **runner_kwargs,
+        )
+
+    return build_chat_response(
+        result=result,
+        engine=resolved_request.engine,
+    )
+
+
+def build_runner_kwargs(dependencies: ChatRuntimeDependencies) -> dict[str, Any]:
+    kwargs: dict[str, Any] = {}
+    if dependencies.llm is not None:
+        kwargs["llm"] = dependencies.llm
+    if dependencies.router is not None:
+        kwargs["router"] = dependencies.router
+    if dependencies.drug_searcher is not None:
+        kwargs["drug_searcher"] = dependencies.drug_searcher
+    if dependencies.retriever is not None:
+        kwargs["retriever"] = dependencies.retriever
+    if dependencies.query_rewriter is not None:
+        kwargs["query_rewriter"] = dependencies.query_rewriter
+    return kwargs
+
+
+def normalize_chat_request(request: ChatRequest | DrugSearchInput | str) -> ChatRequest:
+    if isinstance(request, ChatRequest):
+        return request
+    if isinstance(request, DrugSearchInput):
+        return ChatRequest(query=request.query)
+    return ChatRequest(query=request)
+
+
+def build_chat_response(result: ChatPipelineResult, engine: ChatEngine) -> ChatResponse:
+    return ChatResponse(
+        answer=result.answer,
+        route=result.decision.route.value,
+        query=result.search_input.query,
+        engine=engine,
+        citations=[build_citation_summary(match) for match in result.retrieval_matches],
+        drug_status=result.drug_result.status.value if result.drug_result else None,
+        retrieval_attempts=result.retrieval_attempts,
+        retrieval_retry_reason=result.retrieval_retry_reason,
+        errors=[error.model_dump() for error in result.errors],
+    )
+
+
+def build_citation_summary(match) -> CitationSummary:
+    return CitationSummary(
+        chunk_id=match.chunk_id,
+        source_id=match.source_id,
+        title=match.title,
+        page=match.metadata.page,
+        distance=match.distance,
+    )
