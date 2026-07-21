@@ -28,4 +28,4 @@
 | 약 먹어도 돼? | 금지약물, 금지방법 | prohibited substance, prohibited method | 제품명/성분명 확인 필요 |
 | 제품명 검색 | 약물검색, 제품명 | product name search | KADA source 필요 |
 | 성분명 검색 | 성분명, 약리적 물질 | ingredient, substance | 타이레놀/아세트아미노펜 연결 |
-| 코감기약 | 비강, 국소투여, 흥분제 예외 | nasal use, local administration | 성분 확인 필요 |
+| 코감기약/비강 스프레이 | 제품명, 성분명, 약물검색, 투여 경로, 용량 | product name, ingredient, substance, route | 비강 스프레이라는 형태만으로 단정하지 않고 KADA 약물검색으로 유도 |

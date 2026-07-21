@@ -1,4 +1,9 @@
-from app.chat.answer.chain import build_answer_messages, extract_message_content, generate_answer
+from app.chat.answer.chain import (
+    build_answer_messages,
+    extract_message_content,
+    generate_answer,
+    trim_answer_messages,
+)
 from app.chat.drug_search.schemas import (
     CompetitionPeriod,
     DrugRiskStatus,
@@ -7,6 +12,7 @@ from app.chat.drug_search.schemas import (
 )
 from app.chat.retrieval.schemas import RetrievalMatch, RetrievalMetadata
 from app.chat.router.intent_router import ChatRoute, RouteDecision
+from app.chat.policy.answer_policy import OFFICIAL_DECISION_DISCLAIMER
 
 
 def test_generate_answer_uses_deterministic_formatter_when_llm_disabled() -> None:
@@ -119,3 +125,49 @@ def test_extract_message_content_handles_langchain_content_blocks() -> None:
     ]
 
     assert extract_message_content(content) == "첫 번째 문장\n두 번째 문장"
+
+
+def test_trim_answer_messages_preserves_system_and_required_query_info() -> None:
+    query = "슈도에페드린 경기기간 중 먹어도 돼?"
+    messages = build_answer_messages(
+        query=query,
+        decision=RouteDecision(route=ChatRoute.DRUG_SEARCH_WITH_RAG, reason="drug with rag"),
+        structured_answer="긴 근거 " * 2000,
+    )
+
+    trimmed = trim_answer_messages(messages, max_tokens=300)
+
+    assert trimmed[0]["role"] == "system"
+    assert "도핑 정보 챗봇" in trimmed[0]["content"]
+    assert trimmed[-1]["role"] == "user"
+    assert query in trimmed[-1]["content"]
+    assert OFFICIAL_DECISION_DISCLAIMER in trimmed[-1]["content"]
+    assert len(trimmed[-1]["content"]) < len(messages[-1]["content"])
+
+
+def test_generate_answer_passes_trimmed_messages_to_injected_llm() -> None:
+    captured_messages: list[dict[str, str]] = []
+
+    def fake_llm(messages: list[dict[str, str]]) -> str:
+        captured_messages.extend(messages)
+        return "trimmed answer"
+
+    answer = generate_answer(
+        query="TUE 신청 방법 알려줘",
+        decision=RouteDecision(route=ChatRoute.RAG, reason="rag only"),
+        retrieval_matches=[
+            RetrievalMatch(
+                rank=1,
+                chunk_id="field_response_manual:s6:c0",
+                distance=0.2,
+                metadata=RetrievalMetadata(source_id="field_response_manual"),
+                text="긴 검색 근거 " * 2000,
+            )
+        ],
+        llm=fake_llm,
+    )
+
+    assert answer == "trimmed answer"
+    assert captured_messages[0]["role"] == "system"
+    assert captured_messages[-1]["role"] == "user"
+    assert "TUE 신청 방법 알려줘" in captured_messages[-1]["content"]

@@ -1,7 +1,16 @@
 from app.chat.drug_search.formatter import STATUS_LABELS
+from app.chat.policy.answer_policy import (
+    DRUG_USE_SAFETY_NOTE,
+    FIELD_RESPONSE_SAFETY_NOTE,
+    LOW_RISK_DOES_NOT_GUARANTEE_USE_NOTE,
+    OFFICIAL_DECISION_DISCLAIMER,
+)
 from app.chat.drug_search.schemas import DrugRiskStatus, DrugSearchResult
 from app.chat.retrieval.schemas import RetrievalMatch
 from app.chat.router.intent_router import ChatRoute, RouteDecision
+
+
+EVIDENCE_PREVIEW_CHARS = 700
 
 
 def format_answer(
@@ -21,6 +30,16 @@ def format_answer(
         "",
         "## 추가 확인",
         *format_follow_up_checks(drug_result=drug_result),
+        "",
+        "## 행동 지침",
+        *format_action_guidance(
+            query=query,
+            drug_result=drug_result,
+            retrieval_matches=retrieval_matches,
+        ),
+        "",
+        "## 근거 핵심",
+        *format_evidence_highlights(retrieval_matches=retrieval_matches, limit=citation_limit),
         "",
         "## 근거",
         *format_citations(retrieval_matches=retrieval_matches, limit=citation_limit),
@@ -86,6 +105,81 @@ def format_drug_findings(drug_result: DrugSearchResult) -> list[str]:
     return lines
 
 
+def format_action_guidance(
+    query: str,
+    drug_result: DrugSearchResult | None,
+    retrieval_matches: list[RetrievalMatch],
+) -> list[str]:
+    normalized_query = query.casefold().replace(" ", "")
+    chunk_ids = {match.chunk_id for match in retrieval_matches}
+    source_ids = {match.source_id for match in retrieval_matches}
+
+    if "s0" in normalized_query or "비승인약물" in normalized_query:
+        return [
+            "- S0은 비승인 약물 분류이며 상시 금지 항목으로 확인해야 합니다.",
+            "- 정부 보건기구에서 사람 치료용으로 승인하지 않은 약리적 물질이 포함됩니다.",
+            "- 예시 물질이 전부는 아니므로 공식 금지목록 기준으로 다시 확인해야 합니다.",
+        ]
+
+    if "슈도에페드린" in normalized_query or "pseudoephedrine" in normalized_query:
+        return [
+            "- 슈도에페드린은 경기기간 중 금지 가능성이 있으므로 S6 흥분제 관련 기준을 확인해야 합니다.",
+            "- 소변 농도 기준, 용량 또는 농도, 제품명과 성분명을 함께 확인해야 합니다.",
+            "- 복용 전 팀 닥터, 약사, KADA 또는 도핑 담당자에게 확인하고 무조건 복용 가능/불가능으로 단정하지 않습니다.",
+        ]
+
+    if "tue" in normalized_query or "치료목적사용면책" in normalized_query:
+        return [
+            "- TUE는 치료목적사용면책이며 금지약물 또는 금지방법 사용이 의학적으로 필요한 경우 신청합니다.",
+            "- KADA 안내 또는 공식 절차에 따라 신청서와 의료자료 또는 진단자료를 준비해야 합니다.",
+            "- 대리 신청 또는 선수지원요원의 도움 가능 여부를 확인하고, 경기 전 충분한 시간 여유를 두고 신청해야 합니다.",
+            "- 긴급 치료 상황은 사후 절차가 필요할 수 있습니다.",
+        ]
+
+    if "field_response_manual:s1" in " ".join(chunk_ids) or ("검사관" in normalized_query and "신분" in normalized_query):
+        return [
+            "- 즉시 충돌하거나 현장을 이탈하지 말고 검사관 신분증, 소속, 권한을 차분히 확인합니다.",
+            "- 신분이 불분명하면 확인될 때까지 절차 설명을 요청합니다.",
+            "- 통역, 팀 관계자 또는 동석자를 요청하고 상황을 기록합니다.",
+            "- 공식 절차 확인 없이 무단 거부로 보일 행동은 피합니다.",
+            "- 검사관의 불합리한 행동은 사후 이의제기 또는 보고 절차로 남깁니다.",
+        ]
+
+    if "field_response_manual:s2" in " ".join(chunk_ids) or ("혈액" in normalized_query and ("새벽" in normalized_query or "야간" in normalized_query)):
+        return [
+            "- 무단 거부하거나 현장을 이탈하지 말고 검사관 신분과 절차를 먼저 확인합니다.",
+            "- 잠이 덜 깼거나 상황 인지가 어렵다면 통역, 팀 관계자 또는 동석자를 요청합니다.",
+            "- 혈액 시료 채취 사유와 절차 설명을 요청합니다.",
+            "- 의사소통이 어렵다면 이를 기록하고 도움을 요청합니다.",
+            "- 안전 또는 의료상 우려가 있으면 차분히 설명하고 기록합니다.",
+            "- 대체 시료 가능 여부는 단정하지 말고 공식 근거 확인이 필요하다고 안내합니다.",
+        ]
+
+    if source_ids:
+        return ["- 검색된 근거를 기준으로 답변하되, 불명확한 부분은 공식 기관 확인을 우선합니다."]
+
+    return ["- 검색 근거가 부족하므로 공식 자료 확인 후 판단해야 합니다."]
+
+
+def format_evidence_highlights(retrieval_matches: list[RetrievalMatch], limit: int) -> list[str]:
+    if not retrieval_matches:
+        return ["- 검색된 문서 근거에서 요약할 핵심 내용이 없습니다."]
+
+    highlights: list[str] = []
+    for match in retrieval_matches[:limit]:
+        preview = normalize_preview_text(match.text, max_chars=EVIDENCE_PREVIEW_CHARS)
+        highlights.append(f"- `{match.chunk_id}`: {preview}")
+
+    return highlights
+
+
+def normalize_preview_text(text: str, max_chars: int) -> str:
+    collapsed = " ".join(text.split())
+    if len(collapsed) <= max_chars:
+        return collapsed
+    return f"{collapsed[:max_chars].rstrip()}..."
+
+
 def format_follow_up_checks(drug_result: DrugSearchResult | None) -> list[str]:
     if not drug_result:
         return ["- 질문과 관련된 공식 문서 근거를 확인하고, 불명확하면 KADA 또는 담당자에게 문의해야 합니다."]
@@ -117,7 +211,7 @@ def format_citations(retrieval_matches: list[RetrievalMatch], limit: int) -> lis
     for match in retrieval_matches[:limit]:
         page = match.metadata.page
         page_text = f", p.{page}" if page is not None else ""
-        preview = match.text[:180].replace("\n", " ")
+        preview = normalize_preview_text(match.text, max_chars=180)
         citations.append(f"- {match.title}{page_text} (`{match.chunk_id}`): {preview}")
 
     return citations
@@ -127,17 +221,17 @@ def format_safety_notes(
     decision: RouteDecision,
     drug_result: DrugSearchResult | None,
 ) -> list[str]:
-    notes = ["이 답변은 도핑 관련 의사결정을 돕기 위한 보조 정보이며 공식 판정을 대체하지 않습니다."]
+    notes = [OFFICIAL_DECISION_DISCLAIMER]
 
     if decision.route in {ChatRoute.DRUG_SEARCH, ChatRoute.DRUG_SEARCH_WITH_RAG}:
-        notes.append("경기기간 중 약물 사용은 복용 전 팀 닥터, 약사, KADA 또는 도핑 담당자에게 확인하는 것이 안전합니다.")
+        notes.append(DRUG_USE_SAFETY_NOTE)
     else:
-        notes.append("현장 상황에서는 즉시 거부보다 확인, 기록, 동석 요청, 공식 절차 확인을 우선해야 합니다.")
+        notes.append(FIELD_RESPONSE_SAFETY_NOTE)
 
     if drug_result:
         notes.extend(drug_result.notes)
 
     if drug_result and drug_result.status is DrugRiskStatus.LOW_RISK:
-        notes.append("낮은 위험은 사용 가능을 보장하는 표현이 아닙니다.")
+        notes.append(LOW_RISK_DOES_NOT_GUARANTEE_USE_NOTE)
 
     return [f"- {note}" for note in dict.fromkeys(notes)]

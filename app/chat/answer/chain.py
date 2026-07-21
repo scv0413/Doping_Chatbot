@@ -1,27 +1,23 @@
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, trim_messages
 from langchain_openai import ChatOpenAI
 
 from app.chat.answer.formatter import format_answer
 from app.chat.answer.types import AnswerLLM, ChatMessage
 from app.chat.config import settings
+from app.chat.policy.answer_policy import (
+    OFFICIAL_DECISION_DISCLAIMER,
+    build_answer_writing_instructions,
+    build_system_prompt,
+)
 from app.chat.drug_search.schemas import DrugSearchResult
 from app.chat.retrieval.schemas import RetrievalMatch
 from app.chat.router.intent_router import RouteDecision
 
 
-SYSTEM_PROMPT = """당신은 엘리트 선수와 트레이너를 돕는 도핑 정보 챗봇입니다.
+DEFAULT_MAX_PROMPT_TOKENS = 6000
+TRIM_TEXT_CHUNK_SIZE = 800
 
-역할:
-- 제공된 KADA 약물검색 결과와 RAG 문서 근거만 사용해 답변합니다.
-- 근거에 없는 법적 판단, 의학적 처방, 복용 가능 확정 표현을 만들지 않습니다.
-- 사용자가 현장에서 바로 이해할 수 있게 짧고 명확한 한국어로 답변합니다.
-- 문서 근거가 부족하면 부족하다고 말하고 추가 확인 방법을 안내합니다.
-- chunk_id, 문서명, page 정보가 있으면 답변 하단에 유지합니다.
-
-안전 원칙:
-- 도핑 관련 답변은 공식 판정을 대체하지 않습니다.
-- 약물 질문은 제품명, 성분명, 투여 경로, 용량, 종목, 경기기간 여부를 확인하도록 안내합니다.
-- 현장 절차 질문은 즉시 충돌보다 확인, 기록, 동석 요청, 공식 절차 확인을 우선하도록 안내합니다.
-"""
+SYSTEM_PROMPT = build_system_prompt()
 
 
 def generate_answer(
@@ -54,10 +50,12 @@ def generate_answer(
         structured_answer=structured_answer,
     )
 
+    trimmed_messages = trim_answer_messages(messages)
+
     try:
         if llm:
-            return normalize_answer_text(llm(messages))
-        return normalize_answer_text(call_configured_llm(messages))
+            return normalize_answer_text(llm(trimmed_messages))
+        return normalize_answer_text(call_configured_llm(trimmed_messages))
     except Exception as exc:
         return format_llm_fallback_answer(structured_answer=structured_answer, error=exc)
 
@@ -79,15 +77,75 @@ def build_answer_messages(
 {structured_answer}
 
 작성 지침:
-1. 위 구조화 답변의 사실과 주의문을 유지하세요.
-2. 사용자가 바로 행동 기준을 알 수 있도록 답변하세요.
-3. 근거가 부족한 부분은 확정하지 말고 추가 확인이 필요하다고 말하세요.
-4. 답변 마지막에 근거와 주의 섹션을 유지하세요.
+{build_answer_writing_instructions()}
+
+필수 유지 정보:
+- 사용자 질문: {query}
+- route: {decision.route}
+- {OFFICIAL_DECISION_DISCLAIMER}
 """
     return [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": user_prompt},
     ]
+
+
+def trim_answer_messages(
+    messages: list[ChatMessage],
+    max_tokens: int = DEFAULT_MAX_PROMPT_TOKENS,
+) -> list[ChatMessage]:
+    trimmed = trim_messages(
+        messages,
+        max_tokens=max_tokens,
+        token_counter="approximate",
+        strategy="last",
+        include_system=True,
+        allow_partial=True,
+        text_splitter=split_text_for_trimming,
+    )
+    chat_messages = [base_message_to_chat_message(message) for message in trimmed]
+
+    if has_user_message(chat_messages):
+        return chat_messages
+
+    fallback_user_message = build_fallback_user_message(messages)
+    if fallback_user_message is None:
+        return chat_messages
+
+    return [*chat_messages, fallback_user_message]
+
+
+def has_user_message(messages: list[ChatMessage]) -> bool:
+    return any(message["role"] == "user" for message in messages)
+
+
+def build_fallback_user_message(messages: list[ChatMessage]) -> ChatMessage | None:
+    user_messages = [message for message in messages if message["role"] == "user"]
+    if not user_messages:
+        return None
+
+    content = user_messages[-1]["content"]
+    return {"role": "user", "content": content[-TRIM_TEXT_CHUNK_SIZE:]}
+
+
+def split_text_for_trimming(text: str) -> list[str]:
+    return [
+        text[index : index + TRIM_TEXT_CHUNK_SIZE]
+        for index in range(0, len(text), TRIM_TEXT_CHUNK_SIZE)
+    ]
+
+
+def base_message_to_chat_message(message: BaseMessage) -> ChatMessage:
+    if isinstance(message, SystemMessage):
+        role = "system"
+    elif isinstance(message, HumanMessage):
+        role = "user"
+    elif isinstance(message, AIMessage):
+        role = "assistant"
+    else:
+        role = "user"
+
+    return {"role": role, "content": extract_message_content(message.content)}
 
 
 def call_configured_llm(messages: list[ChatMessage]) -> str:

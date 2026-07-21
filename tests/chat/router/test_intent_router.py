@@ -41,3 +41,17 @@ def test_defaults_to_rag_when_no_drug_signal_exists() -> None:
     decision = route_question("도핑 교육 자료는 어디서 확인해?")
 
     assert decision.route is ChatRoute.RAG
+
+
+def test_routes_prohibited_category_definition_to_rag() -> None:
+    decision = route_question("S0 비승인약물이 뭐야?")
+
+    assert decision.route is ChatRoute.RAG
+    assert "S0" in decision.matched_terms
+
+
+def test_routes_generic_half_life_question_to_rag() -> None:
+    decision = route_question("약물 반감기로 경기기간 복용 가능 여부를 판단해도 돼?")
+
+    assert decision.route is ChatRoute.RAG
+    assert "반감기" in decision.matched_terms

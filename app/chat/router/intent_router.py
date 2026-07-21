@@ -59,7 +59,30 @@ REGULATION_CONTEXT_TERMS = {
     "치료목적사용면책",
 }
 
+
+PROHIBITED_CATEGORY_TERMS = {
+    "S0",
+    "S1",
+    "S2",
+    "S3",
+    "S4",
+    "S5",
+    "S6",
+    "S7",
+    "S8",
+    "S9",
+    "M1",
+    "M2",
+    "M3",
+    "P1",
+    "비승인약물",
+    "동화작용제",
+    "흥분제",
+    "금지분류",
+}
+
 RAG_ONLY_TERMS = {
+    "반감기",
     "검사관",
     "시료채취",
     "혈액",
@@ -76,7 +99,24 @@ def route_question(query: str) -> RouteDecision:
     normalized_query = normalize_query(query)
     matched_drug_terms = find_terms(normalized_query, DRUG_SUBSTANCE_TERMS | DRUG_CONTEXT_TERMS)
     matched_regulation_terms = find_terms(normalized_query, REGULATION_CONTEXT_TERMS)
+    matched_category_terms = find_terms(normalized_query, PROHIBITED_CATEGORY_TERMS)
     matched_rag_only_terms = find_terms(normalized_query, RAG_ONLY_TERMS)
+
+    matched_specific_drug_terms = find_terms(normalized_query, DRUG_SUBSTANCE_TERMS)
+
+    if matched_category_terms and not matched_specific_drug_terms:
+        return RouteDecision(
+            route=ChatRoute.RAG,
+            reason="금지목록 분류나 규정 정의를 묻는 질문입니다.",
+            matched_terms=dedupe_terms([*matched_category_terms, *matched_regulation_terms]),
+        )
+
+    if "반감기" in matched_rag_only_terms and not matched_specific_drug_terms:
+        return RouteDecision(
+            route=ChatRoute.RAG,
+            reason="특정 제품 조회보다 약물 정보 해석 기준을 묻는 질문입니다.",
+            matched_terms=dedupe_terms([*matched_rag_only_terms, *matched_regulation_terms]),
+        )
 
     if matched_drug_terms and matched_regulation_terms:
         return RouteDecision(

@@ -1,0 +1,171 @@
+from app.chat.drug_search.schemas import DrugRiskStatus, DrugSearchInput, DrugSearchResult
+from app.chat.graph.graph import run_chat_graph
+from app.chat.graph.nodes import (
+    ChatGraphDependencies,
+    build_answer_node,
+    build_drug_search_node,
+    build_retrieve_node,
+    build_rewrite_node,
+    build_route_node,
+)
+from app.chat.pipeline.chat_pipeline import run_chat_pipeline
+from app.chat.retrieval.schemas import RetrievalMatch, RetrievalMetadata
+from app.chat.router.intent_router import ChatRoute
+
+
+def fake_drug_searcher(search_input: DrugSearchInput) -> DrugSearchResult:
+    if "슈도에페드린" in search_input.query:
+        return DrugSearchResult(
+            status=DrugRiskStatus.PROHIBITED_POSSIBLE,
+            input=search_input,
+            matched_substances=["슈도에페드린"],
+            prohibited_categories=["S6_120"],
+            requires_dose_confirmation=True,
+            recommended_action="용량 기준 확인 필요",
+        )
+
+    return DrugSearchResult(
+        status=DrugRiskStatus.NEEDS_VERIFICATION,
+        input=search_input,
+        recommended_action="제품명 확인 필요",
+    )
+
+
+def fake_retriever(query: str, top_k: int) -> list[RetrievalMatch]:
+    return [
+        RetrievalMatch(
+            rank=1,
+            chunk_id="field_response_manual:s1:c0" if "검사관" in query else "wada_prohibited_list_2026_ko:p17:c3",
+            distance=0.2,
+            metadata=RetrievalMetadata(
+                source_id="field_response_manual" if "검사관" in query else "wada_prohibited_list_2026_ko",
+                title="현장 대응 매뉴얼" if "검사관" in query else "금지목록 국제표준",
+                page=17,
+            ),
+            text="검사관 신분 확인, 기록, 동석 요청" if "검사관" in query else "슈도에페드린 S6 흥분제 소변 농도 기준",
+        )
+    ][:top_k]
+
+
+def identity_rewriter(query: str) -> str:
+    return query
+
+
+def chunk_ids(result) -> list[str]:
+    return [match.chunk_id for match in result.retrieval_matches]
+
+
+def test_graph_nodes_run_rag_flow() -> None:
+    dependencies = ChatGraphDependencies(
+        retriever=fake_retriever,
+        query_rewriter=identity_rewriter,
+    )
+    state = {
+        "query": "도핑 검사관 신분이 불분명하면 어떻게 확인해야 해?",
+        "top_k": 3,
+        "use_llm": False,
+        "errors": [],
+    }
+
+    state.update(build_route_node(dependencies)(state))
+    assert state["decision"].route is ChatRoute.RAG
+
+    state.update(build_rewrite_node(dependencies)(state))
+    assert state["retrieval_query"] == state["query"]
+
+    state.update(build_retrieve_node(dependencies)(state))
+    assert state["retrieval_matches"][0].chunk_id == "field_response_manual:s1:c0"
+
+    state.update(build_answer_node(dependencies)(state))
+    assert "확인, 기록, 동석 요청" in state["answer"]
+
+
+def test_drug_search_node_uses_fallback_error_path() -> None:
+    def broken_drug_searcher(search_input: DrugSearchInput) -> DrugSearchResult:
+        raise RuntimeError("temporary failure")
+
+    dependencies = ChatGraphDependencies(drug_searcher=broken_drug_searcher)
+    state = {
+        "query": "타이레놀 먹어도 돼?",
+        "top_k": 3,
+        "use_llm": False,
+        "errors": [],
+    }
+    state.update(build_route_node(dependencies)(state))
+    state.update(build_drug_search_node(dependencies)(state))
+
+    assert state["drug_result"].status is DrugRiskStatus.NEEDS_VERIFICATION
+    assert state["errors"][0].stage == "drug_search"
+
+
+def test_graph_matches_pipeline_for_rag_flow() -> None:
+    query = "도핑 검사관 신분이 불분명하면 어떻게 확인해야 해?"
+    pipeline_result = run_chat_pipeline(
+        query,
+        top_k=3,
+        use_llm=False,
+        retriever=fake_retriever,
+        query_rewriter=identity_rewriter,
+    )
+    graph_result = run_chat_graph(
+        query,
+        top_k=3,
+        use_llm=False,
+        retriever=fake_retriever,
+        query_rewriter=identity_rewriter,
+    )
+
+    assert graph_result.decision.route == pipeline_result.decision.route
+    assert chunk_ids(graph_result) == chunk_ids(pipeline_result)
+    assert graph_result.errors == pipeline_result.errors
+    assert "## 답변 요약" in graph_result.answer
+
+
+def test_graph_matches_pipeline_for_drug_search_only_flow() -> None:
+    query = "타이레놀 먹어도 돼?"
+    pipeline_result = run_chat_pipeline(
+        query,
+        top_k=3,
+        use_llm=False,
+        drug_searcher=fake_drug_searcher,
+    )
+    graph_result = run_chat_graph(
+        query,
+        top_k=3,
+        use_llm=False,
+        drug_searcher=fake_drug_searcher,
+    )
+
+    assert graph_result.decision.route == pipeline_result.decision.route
+    assert graph_result.drug_result is not None
+    assert pipeline_result.drug_result is not None
+    assert graph_result.drug_result.status == pipeline_result.drug_result.status
+    assert graph_result.retrieval_matches == []
+    assert graph_result.errors == []
+
+
+def test_graph_matches_pipeline_for_drug_search_with_rag_flow() -> None:
+    query = "슈도에페드린 경기기간 중 먹어도 돼?"
+    pipeline_result = run_chat_pipeline(
+        query,
+        top_k=3,
+        use_llm=False,
+        drug_searcher=fake_drug_searcher,
+        retriever=fake_retriever,
+        query_rewriter=identity_rewriter,
+    )
+    graph_result = run_chat_graph(
+        query,
+        top_k=3,
+        use_llm=False,
+        drug_searcher=fake_drug_searcher,
+        retriever=fake_retriever,
+        query_rewriter=identity_rewriter,
+    )
+
+    assert graph_result.decision.route == pipeline_result.decision.route
+    assert graph_result.drug_result is not None
+    assert pipeline_result.drug_result is not None
+    assert graph_result.drug_result.status == pipeline_result.drug_result.status
+    assert chunk_ids(graph_result) == chunk_ids(pipeline_result)
+    assert graph_result.errors == []

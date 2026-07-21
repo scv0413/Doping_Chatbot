@@ -74,12 +74,16 @@ TERM_EXPANSIONS = {
         "제품명",
     ],
     "코감기": [
-        "비강",
-        "국소투여",
-        "흥분제 예외",
-        "nasal use",
-        "local administration",
-        "stimulants exceptions",
+        "제품명",
+        "성분명",
+        "약물검색",
+        "KADA 금지약물 검색서비스",
+        "투여 경로",
+        "용량",
+        "비강 스프레이",
+        "product name",
+        "ingredient",
+        "substance",
     ],
 }
 
