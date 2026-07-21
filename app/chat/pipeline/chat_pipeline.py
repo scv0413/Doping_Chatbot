@@ -5,6 +5,11 @@ from pydantic import BaseModel, Field
 from app.chat.answer.chain import generate_answer
 from app.chat.answer.types import AnswerLLM
 from app.chat.drug_search.kada_client import search_kada_drugs
+from app.chat.pharmacology.schemas import PharmacologyInfoResult
+from app.chat.pharmacology.service import (
+    search_pharmacology_info,
+    should_run_pharmacology_info,
+)
 from app.chat.drug_search.schemas import (
     DrugSearchInput,
     DrugSearchResult,
@@ -35,6 +40,7 @@ DrugSearcher = Callable[[DrugSearchInput], DrugSearchResult]
 Retriever = Callable[[str, int], list[RetrievalMatch]]
 QuestionRouter = Callable[[str], RouteDecision]
 QueryRewriter = Callable[[str], str]
+PharmacologySearcher = Callable[[str], PharmacologyInfoResult]
 
 
 class PipelineError(BaseModel):
@@ -47,6 +53,7 @@ class ChatPipelineResult(BaseModel):
     search_input: DrugSearchInput
     decision: RouteDecision
     drug_result: DrugSearchResult | None = None
+    pharmacology_result: PharmacologyInfoResult | None = None
     retrieval_query: str | None = None
     rewritten_query: str | None = None
     retrieval_matches: list[RetrievalMatch] = Field(default_factory=list)
@@ -65,6 +72,7 @@ def run_chat_pipeline(
     drug_searcher: DrugSearcher = search_kada_drugs,
     retriever: Retriever = search,
     query_rewriter: QueryRewriter = rewrite_query,
+    pharmacology_searcher: PharmacologySearcher = search_pharmacology_info,
 ) -> ChatPipelineResult:
     resolved_input = normalize_pipeline_input(search_input)
     decision = router(resolved_input.query)
@@ -75,6 +83,14 @@ def run_chat_pipeline(
         drug_result = run_drug_search_step(
             search_input=resolved_input,
             drug_searcher=drug_searcher,
+            errors=errors,
+        )
+
+    pharmacology_result: PharmacologyInfoResult | None = None
+    if should_run_pharmacology_info(resolved_input.query):
+        pharmacology_result = run_pharmacology_step(
+            query=resolved_input.query,
+            pharmacology_searcher=pharmacology_searcher,
             errors=errors,
         )
 
@@ -104,6 +120,7 @@ def run_chat_pipeline(
         query=resolved_input.query,
         decision=decision,
         drug_result=drug_result,
+        pharmacology_result=pharmacology_result,
         retrieval_matches=retrieval_matches,
         llm=llm,
         use_llm=use_llm,
@@ -113,6 +130,7 @@ def run_chat_pipeline(
         search_input=resolved_input,
         decision=decision,
         drug_result=drug_result,
+        pharmacology_result=pharmacology_result,
         retrieval_query=retrieval_query,
         rewritten_query=rewritten_query,
         retrieval_matches=retrieval_matches,
@@ -150,6 +168,18 @@ def run_drug_search_step(
             search_input=search_input,
             recommended_action="약물검색 중 오류가 발생했습니다. 제품명과 성분명을 확인한 뒤 다시 조회하거나 KADA 공식 자료를 확인하세요.",
         )
+
+
+def run_pharmacology_step(
+    query: str,
+    pharmacology_searcher: PharmacologySearcher,
+    errors: list[PipelineError],
+) -> PharmacologyInfoResult | None:
+    try:
+        return pharmacology_searcher(query)
+    except Exception as exc:
+        errors.append(build_pipeline_error(stage="pharmacology_info", exc=exc))
+        return None
 
 
 def run_retrieval_step(

@@ -10,6 +10,7 @@ from app.chat.policy.answer_policy import (
     build_system_prompt,
 )
 from app.chat.drug_search.schemas import DrugSearchResult
+from app.chat.pharmacology.schemas import PharmacologyInfoResult
 from app.chat.retrieval.schemas import RetrievalMatch
 from app.chat.router.intent_router import RouteDecision
 
@@ -24,6 +25,7 @@ def generate_answer(
     query: str,
     decision: RouteDecision,
     drug_result: DrugSearchResult | None = None,
+    pharmacology_result: PharmacologyInfoResult | None = None,
     retrieval_matches: list[RetrievalMatch] | None = None,
     llm: AnswerLLM | None = None,
     use_llm: bool = True,
@@ -38,6 +40,7 @@ def generate_answer(
         query=query,
         decision=decision,
         drug_result=drug_result,
+        pharmacology_result=pharmacology_result,
         retrieval_matches=retrieval_matches,
     )
 

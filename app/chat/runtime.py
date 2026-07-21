@@ -9,6 +9,7 @@ from app.chat.graph.graph import DEFAULT_RECURSION_LIMIT, run_chat_graph
 from app.chat.pipeline.chat_pipeline import (
     ChatPipelineResult,
     DrugSearcher,
+    PharmacologySearcher,
     QueryRewriter,
     QuestionRouter,
     Retriever,
@@ -44,6 +45,8 @@ class ChatResponse(BaseModel):
     engine: ChatEngine
     citations: list[CitationSummary] = Field(default_factory=list)
     drug_status: str | None = None
+    pharmacology_status: str | None = None
+    pharmacology_substance: str | None = None
     retrieval_attempts: int = 0
     retrieval_retry_reason: str | None = None
     errors: list[dict[str, Any]] = Field(default_factory=list)
@@ -57,6 +60,7 @@ class ChatRuntimeDependencies(BaseModel):
     drug_searcher: DrugSearcher | None = None
     retriever: Retriever | None = None
     query_rewriter: QueryRewriter | None = None
+    pharmacology_searcher: PharmacologySearcher | None = None
 
 
 def run_chat(
@@ -101,6 +105,8 @@ def build_runner_kwargs(dependencies: ChatRuntimeDependencies) -> dict[str, Any]
         kwargs["retriever"] = dependencies.retriever
     if dependencies.query_rewriter is not None:
         kwargs["query_rewriter"] = dependencies.query_rewriter
+    if dependencies.pharmacology_searcher is not None:
+        kwargs["pharmacology_searcher"] = dependencies.pharmacology_searcher
     return kwargs
 
 
@@ -120,6 +126,8 @@ def build_chat_response(result: ChatPipelineResult, engine: ChatEngine) -> ChatR
         engine=engine,
         citations=[build_citation_summary(match) for match in result.retrieval_matches],
         drug_status=result.drug_result.status.value if result.drug_result else None,
+        pharmacology_status=result.pharmacology_result.status.value if result.pharmacology_result else None,
+        pharmacology_substance=result.pharmacology_result.substance_name if result.pharmacology_result else None,
         retrieval_attempts=result.retrieval_attempts,
         retrieval_retry_reason=result.retrieval_retry_reason,
         errors=[error.model_dump() for error in result.errors],

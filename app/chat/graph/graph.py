@@ -7,6 +7,7 @@ from app.chat.drug_search.schemas import DrugSearchInput
 from app.chat.pipeline.chat_pipeline import (
     ChatPipelineResult,
     DrugSearcher,
+    PharmacologySearcher,
     QueryRewriter,
     QuestionRouter,
     Retriever,
@@ -15,11 +16,13 @@ from app.chat.graph.nodes import (
     ChatGraphDependencies,
     build_answer_node,
     build_drug_search_node,
+    build_pharmacology_node,
     build_retrieve_node,
     build_rewrite_node,
     build_route_node,
     exit_node,
     next_after_drug_search,
+    next_after_pharmacology,
     next_after_retrieve,
     next_after_route,
     retry_rewrite_node,
@@ -35,6 +38,7 @@ def compile_chat_graph(dependencies: ChatGraphDependencies | None = None) -> Any
     builder = StateGraph(ChatGraphState)
     builder.add_node("route", build_route_node(dependencies))
     builder.add_node("drug_search", build_drug_search_node(dependencies))
+    builder.add_node("pharmacology", build_pharmacology_node(dependencies))
     builder.add_node("rewrite", build_rewrite_node(dependencies))
     builder.add_node("retrieve", build_retrieve_node(dependencies))
     builder.add_node("retry_rewrite", retry_rewrite_node)
@@ -45,11 +49,16 @@ def compile_chat_graph(dependencies: ChatGraphDependencies | None = None) -> Any
     builder.add_conditional_edges(
         "route",
         next_after_route,
-        {"drug_search": "drug_search", "rewrite": "rewrite"},
+        {"drug_search": "drug_search", "pharmacology": "pharmacology", "rewrite": "rewrite"},
     )
     builder.add_conditional_edges(
         "drug_search",
         next_after_drug_search,
+        {"pharmacology": "pharmacology", "rewrite": "rewrite", "answer": "answer"},
+    )
+    builder.add_conditional_edges(
+        "pharmacology",
+        next_after_pharmacology,
         {"rewrite": "rewrite", "answer": "answer"},
     )
     builder.add_edge("rewrite", "retrieve")
@@ -73,6 +82,7 @@ def run_chat_graph(
     drug_searcher: DrugSearcher | None = None,
     retriever: Retriever | None = None,
     query_rewriter: QueryRewriter | None = None,
+    pharmacology_searcher: PharmacologySearcher | None = None,
     recursion_limit: int = DEFAULT_RECURSION_LIMIT,
 ) -> ChatPipelineResult:
     query = search_input.query if isinstance(search_input, DrugSearchInput) else search_input
@@ -94,6 +104,8 @@ def run_chat_graph(
         dependency_kwargs["retriever"] = retriever
     if query_rewriter is not None:
         dependency_kwargs["query_rewriter"] = query_rewriter
+    if pharmacology_searcher is not None:
+        dependency_kwargs["pharmacology_searcher"] = pharmacology_searcher
 
     graph = compile_chat_graph(ChatGraphDependencies(**dependency_kwargs))
     final_state = cast(
@@ -108,6 +120,7 @@ def state_to_pipeline_result(state: ChatGraphState) -> ChatPipelineResult:
         search_input=state["search_input"],
         decision=state["decision"],
         drug_result=state.get("drug_result"),
+        pharmacology_result=state.get("pharmacology_result"),
         retrieval_query=state.get("retrieval_query"),
         rewritten_query=state.get("rewritten_query"),
         retrieval_matches=state.get("retrieval_matches", []),

@@ -111,6 +111,13 @@ def route_question(query: str) -> RouteDecision:
             matched_terms=dedupe_terms([*matched_category_terms, *matched_regulation_terms]),
         )
 
+    if "반감기" in matched_rag_only_terms and matched_specific_drug_terms:
+        return RouteDecision(
+            route=ChatRoute.DRUG_SEARCH_WITH_RAG,
+            reason="특정 성분의 반감기 참고와 도핑 규정 근거가 함께 필요한 질문입니다.",
+            matched_terms=dedupe_terms([*matched_specific_drug_terms, *matched_rag_only_terms, *matched_regulation_terms]),
+        )
+
     if "반감기" in matched_rag_only_terms and not matched_specific_drug_terms:
         return RouteDecision(
             route=ChatRoute.RAG,

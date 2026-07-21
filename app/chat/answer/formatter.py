@@ -6,6 +6,11 @@ from app.chat.policy.answer_policy import (
     OFFICIAL_DECISION_DISCLAIMER,
 )
 from app.chat.drug_search.schemas import DrugRiskStatus, DrugSearchResult
+from app.chat.pharmacology.formatter import (
+    format_pharmacology_result,
+    format_pharmacology_sources,
+)
+from app.chat.pharmacology.schemas import PharmacologyInfoResult
 from app.chat.retrieval.schemas import RetrievalMatch
 from app.chat.router.intent_router import ChatRoute, RouteDecision
 
@@ -17,24 +22,35 @@ def format_answer(
     query: str,
     decision: RouteDecision,
     drug_result: DrugSearchResult | None = None,
+    pharmacology_result: PharmacologyInfoResult | None = None,
     retrieval_matches: list[RetrievalMatch] | None = None,
     citation_limit: int = 3,
 ) -> str:
     retrieval_matches = retrieval_matches or []
     sections = [
         "## 답변 요약",
-        *format_summary(decision=decision, drug_result=drug_result, has_retrieval=bool(retrieval_matches)),
+        *format_summary(
+            decision=decision,
+            drug_result=drug_result,
+            pharmacology_result=pharmacology_result,
+            has_retrieval=bool(retrieval_matches),
+        ),
         "",
         "## 확인 결과",
-        *format_findings(drug_result=drug_result, retrieval_matches=retrieval_matches),
+        *format_findings(
+            drug_result=drug_result,
+            pharmacology_result=pharmacology_result,
+            retrieval_matches=retrieval_matches,
+        ),
         "",
         "## 추가 확인",
-        *format_follow_up_checks(drug_result=drug_result),
+        *format_follow_up_checks(drug_result=drug_result, pharmacology_result=pharmacology_result),
         "",
         "## 행동 지침",
         *format_action_guidance(
             query=query,
             drug_result=drug_result,
+            pharmacology_result=pharmacology_result,
             retrieval_matches=retrieval_matches,
         ),
         "",
@@ -42,10 +58,18 @@ def format_answer(
         *format_evidence_highlights(retrieval_matches=retrieval_matches, limit=citation_limit),
         "",
         "## 근거",
-        *format_citations(retrieval_matches=retrieval_matches, limit=citation_limit),
+        *format_citations(
+            retrieval_matches=retrieval_matches,
+            pharmacology_result=pharmacology_result,
+            limit=citation_limit,
+        ),
         "",
         "## 주의",
-        *format_safety_notes(decision=decision, drug_result=drug_result),
+        *format_safety_notes(
+            decision=decision,
+            drug_result=drug_result,
+            pharmacology_result=pharmacology_result,
+        ),
     ]
 
     return "\n".join(sections).strip()
@@ -54,8 +78,18 @@ def format_answer(
 def format_summary(
     decision: RouteDecision,
     drug_result: DrugSearchResult | None,
+    pharmacology_result: PharmacologyInfoResult | None,
     has_retrieval: bool,
 ) -> list[str]:
+    if pharmacology_result and drug_result:
+        return [
+            f"- KADA 약물검색 기준 현재 상태는 **{STATUS_LABELS[drug_result.status]}**입니다.",
+            "- 반감기 정보는 참고용으로 함께 확인했으며, 도핑 허용 여부를 확정하지 않습니다.",
+        ]
+
+    if pharmacology_result:
+        return ["- 약리 정보와 공식 문서 근거를 함께 확인해야 하는 질문입니다."]
+
     if decision.route is ChatRoute.DRUG_SEARCH and drug_result:
         return [f"- KADA 약물검색 기준 현재 상태는 **{STATUS_LABELS[drug_result.status]}**입니다."]
 
@@ -71,12 +105,17 @@ def format_summary(
 
 def format_findings(
     drug_result: DrugSearchResult | None,
+    pharmacology_result: PharmacologyInfoResult | None,
     retrieval_matches: list[RetrievalMatch],
 ) -> list[str]:
     lines: list[str] = []
 
     if drug_result:
         lines.extend(format_drug_findings(drug_result))
+
+    if pharmacology_result:
+        lines.append("- 약리 정보 참고 결과를 확인했습니다.")
+        lines.extend(format_pharmacology_result(pharmacology_result))
 
     if retrieval_matches:
         lines.append(f"- 문서 근거 후보 {len(retrieval_matches)}개를 검색했습니다.")
@@ -108,6 +147,7 @@ def format_drug_findings(drug_result: DrugSearchResult) -> list[str]:
 def format_action_guidance(
     query: str,
     drug_result: DrugSearchResult | None,
+    pharmacology_result: PharmacologyInfoResult | None,
     retrieval_matches: list[RetrievalMatch],
 ) -> list[str]:
     normalized_query = query.casefold().replace(" ", "")
@@ -122,11 +162,14 @@ def format_action_guidance(
         ]
 
     if "슈도에페드린" in normalized_query or "pseudoephedrine" in normalized_query:
-        return [
+        guidance = [
             "- 슈도에페드린은 경기기간 중 금지 가능성이 있으므로 S6 흥분제 관련 기준을 확인해야 합니다.",
             "- 소변 농도 기준, 용량 또는 농도, 제품명과 성분명을 함께 확인해야 합니다.",
             "- 복용 전 팀 닥터, 약사, KADA 또는 도핑 담당자에게 확인하고 무조건 복용 가능/불가능으로 단정하지 않습니다.",
         ]
+        if pharmacology_result:
+            guidance.append("- 반감기는 위험도 참고에만 사용하고, 검출 가능 시간이나 출전 가능 여부로 바로 환산하지 않습니다.")
+        return guidance
 
     if "tue" in normalized_query or "치료목적사용면책" in normalized_query:
         return [
@@ -180,22 +223,29 @@ def normalize_preview_text(text: str, max_chars: int) -> str:
     return f"{collapsed[:max_chars].rstrip()}..."
 
 
-def format_follow_up_checks(drug_result: DrugSearchResult | None) -> list[str]:
-    if not drug_result:
+def format_follow_up_checks(
+    drug_result: DrugSearchResult | None,
+    pharmacology_result: PharmacologyInfoResult | None,
+) -> list[str]:
+    if not drug_result and not pharmacology_result:
         return ["- 질문과 관련된 공식 문서 근거를 확인하고, 불명확하면 KADA 또는 담당자에게 문의해야 합니다."]
 
     checks: list[str] = []
 
-    if drug_result.requires_product_selection:
-        checks.append("정확한 제품명과 성분표를 확인해야 합니다.")
-    if drug_result.requires_route_confirmation:
-        checks.append("투여 경로를 확인해야 합니다.")
-    if drug_result.requires_sport_confirmation:
-        checks.append("종목별 금지 여부를 확인해야 합니다.")
-    if drug_result.requires_dose_confirmation:
-        checks.append("용량 또는 농도 기준을 확인해야 합니다.")
-    if not drug_result.matched_candidates and not drug_result.matched_substances:
-        checks.append("조회 결과가 없으므로 제품명 또는 성분명을 다시 확인해야 합니다.")
+    if pharmacology_result:
+        checks.append("복용한 제품명, 성분명, 복용량, 마지막 복용 시각, 경기 시작 시각을 함께 정리해야 합니다.")
+
+    if drug_result:
+        if drug_result.requires_product_selection:
+            checks.append("정확한 제품명과 성분표를 확인해야 합니다.")
+        if drug_result.requires_route_confirmation:
+            checks.append("투여 경로를 확인해야 합니다.")
+        if drug_result.requires_sport_confirmation:
+            checks.append("종목별 금지 여부를 확인해야 합니다.")
+        if drug_result.requires_dose_confirmation:
+            checks.append("용량 또는 농도 기준을 확인해야 합니다.")
+        if not drug_result.matched_candidates and not drug_result.matched_substances:
+            checks.append("조회 결과가 없으므로 제품명 또는 성분명을 다시 확인해야 합니다.")
 
     if not checks:
         checks.append("현재 입력 기준 추가 확인 플래그는 없습니다.")
@@ -203,11 +253,22 @@ def format_follow_up_checks(drug_result: DrugSearchResult | None) -> list[str]:
     return [f"- {check}" for check in checks]
 
 
-def format_citations(retrieval_matches: list[RetrievalMatch], limit: int) -> list[str]:
+def format_citations(
+    retrieval_matches: list[RetrievalMatch],
+    pharmacology_result: PharmacologyInfoResult | None,
+    limit: int,
+) -> list[str]:
+    citations: list[str] = []
+
+    if pharmacology_result:
+        citations.extend(format_pharmacology_sources(pharmacology_result))
+
     if not retrieval_matches:
+        if citations:
+            citations.append("- 검색된 RAG 문서 근거 없음")
+            return citations
         return ["- 검색된 RAG 문서 근거 없음"]
 
-    citations: list[str] = []
     for match in retrieval_matches[:limit]:
         page = match.metadata.page
         page_text = f", p.{page}" if page is not None else ""
@@ -220,6 +281,7 @@ def format_citations(retrieval_matches: list[RetrievalMatch], limit: int) -> lis
 def format_safety_notes(
     decision: RouteDecision,
     drug_result: DrugSearchResult | None,
+    pharmacology_result: PharmacologyInfoResult | None,
 ) -> list[str]:
     notes = [OFFICIAL_DECISION_DISCLAIMER]
 
@@ -230,6 +292,9 @@ def format_safety_notes(
 
     if drug_result:
         notes.extend(drug_result.notes)
+
+    if pharmacology_result:
+        notes.extend(pharmacology_result.safety_notes)
 
     if drug_result and drug_result.status is DrugRiskStatus.LOW_RISK:
         notes.append(LOW_RISK_DOES_NOT_GUARANTEE_USE_NOTE)
