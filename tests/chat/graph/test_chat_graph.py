@@ -42,7 +42,14 @@ def fake_retriever(query: str, top_k: int) -> list[RetrievalMatch]:
                 title="현장 대응 매뉴얼" if "검사관" in query else "금지목록 국제표준",
                 page=17,
             ),
-            text="검사관 신분 확인, 기록, 동석 요청" if "검사관" in query else "슈도에페드린 S6 흥분제 소변 농도 기준",
+            text=(
+                "검사관 신분 확인, 기록, 동석 요청. 검사 통지 후 즉시 충돌하거나 현장을 이탈하지 않고 "
+                "신분증, 소속, 권한, 절차 설명을 차분히 확인해야 한다. 통역 또는 팀 관계자 동석을 "
+                "요청하고 우려 사항을 기록해야 한다."
+                if "검사관" in query
+                else "슈도에페드린 S6 흥분제 소변 농도 기준. 경기기간 중에는 성분명, 제품명, 용량, "
+                "소변 농도 기준을 함께 확인해야 하며 공식 금지목록과 KADA 약물검색을 확인해야 한다."
+            ),
         )
     ][:top_k]
 
@@ -118,6 +125,7 @@ def test_graph_matches_pipeline_for_rag_flow() -> None:
     assert graph_result.decision.route == pipeline_result.decision.route
     assert chunk_ids(graph_result) == chunk_ids(pipeline_result)
     assert graph_result.errors == pipeline_result.errors
+    assert graph_result.retrieval_attempts == 1
     assert "## 답변 요약" in graph_result.answer
 
 
@@ -169,3 +177,51 @@ def test_graph_matches_pipeline_for_drug_search_with_rag_flow() -> None:
     assert graph_result.drug_result.status == pipeline_result.drug_result.status
     assert chunk_ids(graph_result) == chunk_ids(pipeline_result)
     assert graph_result.errors == []
+
+
+def test_graph_retries_retrieval_once_when_results_are_empty() -> None:
+    calls: list[str] = []
+
+    def flaky_retriever(query: str, top_k: int) -> list[RetrievalMatch]:
+        calls.append(query)
+        if len(calls) == 1:
+            return []
+        return fake_retriever(query, top_k)
+
+    result = run_chat_graph(
+        "도핑 검사관 신분이 불분명하면 어떻게 확인해야 해?",
+        top_k=3,
+        use_llm=False,
+        retriever=flaky_retriever,
+        query_rewriter=identity_rewriter,
+    )
+
+    assert len(calls) == 2
+    assert "공식 근거" in calls[1]
+    assert result.retrieval_matches
+    assert result.retrieval_attempts == 2
+    assert result.retrieval_retry_reason is None
+    assert result.errors == []
+
+
+def test_graph_stops_after_one_retry_when_results_stay_empty() -> None:
+    calls: list[str] = []
+
+    def empty_retriever(query: str, top_k: int) -> list[RetrievalMatch]:
+        calls.append(query)
+        return []
+
+    result = run_chat_graph(
+        "도핑 검사관 신분이 불분명하면 어떻게 확인해야 해?",
+        top_k=3,
+        use_llm=False,
+        retriever=empty_retriever,
+        query_rewriter=identity_rewriter,
+    )
+
+    assert len(calls) == 2
+    assert result.retrieval_matches == []
+    assert result.retrieval_attempts == 2
+    assert result.retrieval_retry_reason == "empty_results"
+    assert result.errors == []
+    assert "공식 문서와 manual source" in result.answer

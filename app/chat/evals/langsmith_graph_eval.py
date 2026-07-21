@@ -62,6 +62,8 @@ def build_graph_retrieval_target(
             "context_chars": sum(len(match.text) for match in result.retrieval_matches),
             "retrieved_text": "\n".join(match.text for match in result.retrieval_matches),
             "answer_chars": len(result.answer),
+            "retrieval_attempts": result.retrieval_attempts,
+            "retrieval_retry_reason": result.retrieval_retry_reason,
             "errors": [error.model_dump() for error in result.errors],
             "error": "; ".join(error.message for error in result.errors) or None,
         }

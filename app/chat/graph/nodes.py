@@ -25,6 +25,9 @@ from app.chat.router.intent_router import route_question
 from app.chat.graph.state import ChatGraphState
 
 DEFAULT_TOP_K = 3
+MAX_RETRIEVAL_ATTEMPTS = 2
+MIN_RETRIEVAL_CONTEXT_CHARS = 80
+MAX_ACCEPTABLE_BEST_DISTANCE = 0.85
 
 
 @dataclass(frozen=True)
@@ -94,9 +97,52 @@ def build_retrieve_node(dependencies: ChatGraphDependencies) -> Callable[[ChatGr
             retriever=dependencies.retriever,
             errors=errors,
         )
-        return {"retrieval_matches": retrieval_matches, "errors": errors}
+        retry_reason = assess_retrieval_retry_reason(retrieval_matches)
+        return {
+            "retrieval_matches": retrieval_matches,
+            "retrieval_attempts": int(state.get("retrieval_attempts", 0)) + 1,
+            "retrieval_retry_reason": retry_reason,
+            "errors": errors,
+        }
 
     return node
+
+
+def retry_rewrite_node(state: ChatGraphState) -> dict[str, Any]:
+    retry_query = build_retry_query(state)
+    return {
+        "rewritten_query": retry_query,
+        "retrieval_retry_reason": None,
+    }
+
+
+def assess_retrieval_retry_reason(matches: list) -> str | None:
+    if not matches:
+        return "empty_results"
+
+    context_chars = sum(len(match.text) for match in matches)
+    if context_chars < MIN_RETRIEVAL_CONTEXT_CHARS:
+        return "low_context"
+
+    best_distance = min(match.distance for match in matches)
+    if best_distance > MAX_ACCEPTABLE_BEST_DISTANCE:
+        return "weak_similarity"
+
+    return None
+
+
+def build_retry_query(state: ChatGraphState) -> str:
+    base_query = state.get("rewritten_query") or state.get("retrieval_query") or state["query"]
+    retry_terms = [
+        "공식 근거",
+        "규정",
+        "절차",
+        "주의",
+        "금지목록",
+        "KADA",
+        "WADA",
+    ]
+    return "\n".join(dict.fromkeys([base_query, *retry_terms]))
 
 
 def build_answer_node(dependencies: ChatGraphDependencies) -> Callable[[ChatGraphState], dict[str, Any]]:
@@ -142,3 +188,17 @@ def next_after_drug_search(state: ChatGraphState) -> str:
     if should_run_retrieval(state["decision"]):
         return "rewrite"
     return "answer"
+
+
+def next_after_retrieve(state: ChatGraphState) -> str:
+    if should_retry_retrieval(state):
+        return "retry_rewrite"
+    return "answer"
+
+
+def should_retry_retrieval(state: ChatGraphState) -> bool:
+    if not should_run_retrieval(state["decision"]):
+        return False
+
+    attempts = int(state.get("retrieval_attempts", 0))
+    return attempts < MAX_RETRIEVAL_ATTEMPTS and bool(state.get("retrieval_retry_reason"))

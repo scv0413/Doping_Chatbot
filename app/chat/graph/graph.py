@@ -20,7 +20,9 @@ from app.chat.graph.nodes import (
     build_route_node,
     exit_node,
     next_after_drug_search,
+    next_after_retrieve,
     next_after_route,
+    retry_rewrite_node,
 )
 from app.chat.graph.state import ChatGraphState
 
@@ -35,6 +37,7 @@ def compile_chat_graph(dependencies: ChatGraphDependencies | None = None) -> Any
     builder.add_node("drug_search", build_drug_search_node(dependencies))
     builder.add_node("rewrite", build_rewrite_node(dependencies))
     builder.add_node("retrieve", build_retrieve_node(dependencies))
+    builder.add_node("retry_rewrite", retry_rewrite_node)
     builder.add_node("answer", build_answer_node(dependencies))
     builder.add_node("exit", exit_node)
 
@@ -50,7 +53,12 @@ def compile_chat_graph(dependencies: ChatGraphDependencies | None = None) -> Any
         {"rewrite": "rewrite", "answer": "answer"},
     )
     builder.add_edge("rewrite", "retrieve")
-    builder.add_edge("retrieve", "answer")
+    builder.add_conditional_edges(
+        "retrieve",
+        next_after_retrieve,
+        {"retry_rewrite": "retry_rewrite", "answer": "answer"},
+    )
+    builder.add_edge("retry_rewrite", "retrieve")
     builder.add_edge("answer", "exit")
     builder.add_edge("exit", END)
     return builder.compile()
@@ -72,6 +80,8 @@ def run_chat_graph(
         "query": query,
         "top_k": top_k,
         "use_llm": use_llm,
+        "retrieval_attempts": 0,
+        "retrieval_retry_reason": None,
         "errors": [],
     }
 
@@ -101,6 +111,8 @@ def state_to_pipeline_result(state: ChatGraphState) -> ChatPipelineResult:
         retrieval_query=state.get("retrieval_query"),
         rewritten_query=state.get("rewritten_query"),
         retrieval_matches=state.get("retrieval_matches", []),
+        retrieval_attempts=state.get("retrieval_attempts", 0),
+        retrieval_retry_reason=state.get("retrieval_retry_reason"),
         answer=state.get("answer", ""),
         errors=state.get("errors", []),
     )

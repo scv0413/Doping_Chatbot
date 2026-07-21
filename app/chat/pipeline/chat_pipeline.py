@@ -50,6 +50,8 @@ class ChatPipelineResult(BaseModel):
     retrieval_query: str | None = None
     rewritten_query: str | None = None
     retrieval_matches: list[RetrievalMatch] = Field(default_factory=list)
+    retrieval_attempts: int = 0
+    retrieval_retry_reason: str | None = None
     answer: str
     errors: list[PipelineError] = Field(default_factory=list)
 
@@ -96,6 +98,7 @@ def run_chat_pipeline(
             retriever=retriever,
             errors=errors,
         )
+        retrieval_attempts = 1
 
     answer = generate_answer(
         query=resolved_input.query,
@@ -113,6 +116,7 @@ def run_chat_pipeline(
         retrieval_query=retrieval_query,
         rewritten_query=rewritten_query,
         retrieval_matches=retrieval_matches,
+        retrieval_attempts=locals().get("retrieval_attempts", 0),
         answer=answer,
         errors=errors,
     )
