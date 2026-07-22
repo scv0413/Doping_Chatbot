@@ -246,9 +246,31 @@ Agent 확장은 “LLM에게 마음대로 맡기는 것”이 아니다.
 - tool 단위 pytest 작성
 - 실제 Chroma index 기반 smoke 확인
 
+## LangGraph 전환 반영 상태
+
+현재 LangGraph retrieve node는 내부적으로 `rag_search_tool`을 호출한다.
+
+구조는 다음과 같다.
+
+```text
+rewritten_query
+  -> RagSearchRequest
+  -> rag_search_tool
+  -> RagSearchToolOutput
+  -> RetrievalMatch adapter
+  -> answer layer
+```
+
+이 구조를 선택한 이유는 다음과 같다.
+
+- graph 내부에 tool boundary를 도입한다.
+- 기존 answer layer가 기대하는 `RetrievalMatch` 구조는 유지한다.
+- state에 `rag_search_output`을 남겨 이후 LangSmith tool trace/eval에 활용할 수 있다.
+- 외부 동작은 유지하면서 MCP 확장 준비를 진행한다.
+
 ## 다음 구현 후보
 
-1. LangGraph retrieve node에서 `rag_search_tool` 호출로 점진 전환
-2. graph state에 tool output을 보존할지, 기존 `RetrievalMatch`로 변환할지 결정
-3. LangSmith tool trace 비교
-4. MCP server exposure 전 input/output schema 안정화
+1. LangSmith tool trace 비교
+2. `rag_search_output` 기반 retrieval/tool eval 추가
+3. MCP server exposure 전 input/output schema 안정화
+4. `drug_search_tool`, `pharmacology_info_tool`, `field_response_tool` 순차 구현

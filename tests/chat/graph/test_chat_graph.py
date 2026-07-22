@@ -81,6 +81,8 @@ def test_graph_nodes_run_rag_flow() -> None:
     assert state["retrieval_query"] == state["query"]
 
     state.update(build_retrieve_node(dependencies)(state))
+    assert state["rag_search_output"].tool_name == "rag_search_tool"
+    assert state["rag_search_output"].results[0].chunk_id == "field_response_manual:s1:c0"
     assert state["retrieval_matches"][0].chunk_id == "field_response_manual:s1:c0"
 
     state.update(build_answer_node(dependencies)(state))

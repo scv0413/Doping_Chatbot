@@ -1,7 +1,7 @@
 from collections.abc import Callable
 
 from app.chat.retrieval.retriever import search
-from app.chat.retrieval.schemas import RetrievalMatch
+from app.chat.retrieval.schemas import RetrievalMatch, RetrievalMetadata
 from app.chat.tools.schemas import RagSearchRequest, RagSearchResult, RagSearchToolOutput, ToolError
 
 RagRetriever = Callable[[str, int], list[RetrievalMatch]]
@@ -48,4 +48,26 @@ def match_to_tool_result(match: RetrievalMatch) -> RagSearchResult:
         section=metadata.section,
         authority=metadata.authority,
         source_type=metadata.source_type,
+    )
+
+
+def tool_output_to_retrieval_matches(output: RagSearchToolOutput) -> list[RetrievalMatch]:
+    return [tool_result_to_retrieval_match(result) for result in output.results]
+
+
+def tool_result_to_retrieval_match(result: RagSearchResult) -> RetrievalMatch:
+    return RetrievalMatch(
+        rank=result.rank,
+        chunk_id=result.chunk_id,
+        distance=result.distance,
+        metadata=RetrievalMetadata(
+            source_id=result.source_id,
+            title=result.title,
+            page=result.page,
+            section=result.section,
+            authority=result.authority,
+            source_type=result.source_type,
+            chunk_id=result.chunk_id,
+        ),
+        text=result.text,
     )

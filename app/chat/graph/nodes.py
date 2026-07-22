@@ -18,13 +18,14 @@ from app.chat.pipeline.chat_pipeline import (
     run_drug_search_step,
     run_pharmacology_step,
     run_query_rewrite_step,
-    run_retrieval_step,
     should_run_drug_search,
     should_run_retrieval,
 )
 from app.chat.retrieval.query_rewriter import rewrite_query
 from app.chat.retrieval.retriever import search
 from app.chat.router.intent_router import route_question
+from app.chat.tools.rag_search_tool import run_rag_search_tool, tool_output_to_retrieval_matches
+from app.chat.tools.schemas import RagSearchRequest, ToolError
 from app.chat.graph.state import ChatGraphState
 
 DEFAULT_TOP_K = 3
@@ -109,14 +110,18 @@ def build_retrieve_node(dependencies: ChatGraphDependencies) -> Callable[[ChatGr
     def node(state: ChatGraphState) -> dict[str, Any]:
         errors = list(state.get("errors", []))
         top_k = int(state.get("top_k", DEFAULT_TOP_K))
-        retrieval_matches = run_retrieval_step(
-            query=state["rewritten_query"] or "",
-            top_k=top_k,
+        rag_search_output = run_rag_search_tool(
+            RagSearchRequest(
+                query=state["rewritten_query"] or "",
+                top_k=top_k,
+            ),
             retriever=dependencies.retriever,
-            errors=errors,
         )
+        errors.extend(tool_errors_to_pipeline_errors(rag_search_output.errors))
+        retrieval_matches = tool_output_to_retrieval_matches(rag_search_output)
         retry_reason = assess_retrieval_retry_reason(retrieval_matches)
         return {
+            "rag_search_output": rag_search_output,
             "retrieval_matches": retrieval_matches,
             "retrieval_attempts": int(state.get("retrieval_attempts", 0)) + 1,
             "retrieval_retry_reason": retry_reason,
@@ -132,6 +137,16 @@ def retry_rewrite_node(state: ChatGraphState) -> dict[str, Any]:
         "rewritten_query": retry_query,
         "retrieval_retry_reason": None,
     }
+
+
+def tool_errors_to_pipeline_errors(tool_errors: list[ToolError]) -> list:
+    return [
+        build_pipeline_error(
+            stage="retrieval",
+            exc=RuntimeError(error.message),
+        ).model_copy(update={"error_type": error.error_type or "ToolError"})
+        for error in tool_errors
+    ]
 
 
 def assess_retrieval_retry_reason(matches: list) -> str | None:
