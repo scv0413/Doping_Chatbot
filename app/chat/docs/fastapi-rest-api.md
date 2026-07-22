@@ -120,3 +120,37 @@ OpenAPI 확인 결과:
 - debug endpoint는 내부 옵션 허용
 - 전체 테스트 `121 passed, 1 warning`
 - 전체 lint `All checks passed`
+
+
+## Gradio/Public API Surface 정리
+
+Gradio MVP와 public REST API는 사용자에게 내부 실행 옵션을 노출하지 않는다.
+
+사용자가 보는 입력은 다음 하나다.
+
+```json
+{
+  "query": "질문"
+}
+```
+
+내부 옵션은 Runtime Policy가 결정한다.
+
+- `engine`: 기본 `graph`
+- `top_k`: 기본 `3`
+- `use_llm`: 질문 유형과 정책에 따라 결정
+- `recursion_limit`: 기본 graph recursion limit
+
+개발자 실험이 필요할 때는 다음 경로를 사용한다.
+
+- REST: `POST /api/v1/debug/chat-responses`
+- CLI: `python -m app.chat.runtime_inspector`
+- LangSmith eval runner: `app.chat.evals.*`
+
+이렇게 분리한 이유는 실제 사용자가 `top_k`, `engine`, `use_llm` 같은 내부 구현 선택지를 이해하거나 조작하지 않아도 되게 하기 위해서다. 운영 UI는 단순해야 하고, 실험 옵션은 개발자 전용 표면에 남기는 것이 안전하다.
+
+검증:
+
+- Gradio `respond()`는 `ChatRequest(query=...)`만 생성한다.
+- public API는 `PublicChatRequest`로 `query`만 허용한다.
+- debug API는 `ChatRequest`를 그대로 받아 내부 옵션 override를 허용한다.

@@ -3,7 +3,7 @@ from collections.abc import Callable
 
 import gradio as gr
 
-from app.chat.runtime import ChatEngine, ChatRequest, ChatResponse, run_chat
+from app.chat.runtime import ChatRequest, ChatResponse, run_chat
 
 DEFAULT_TITLE = "KADA/WADA 도핑 정보 챗봇"
 DEFAULT_DESCRIPTION = (
@@ -44,22 +44,12 @@ def format_metadata(response: ChatResponse) -> str:
 
 def respond(
     query: str,
-    top_k: int | None = None,
-    use_llm: bool | None = None,
-    engine: str | None = None,
     runner: ChatRunner = run_chat,
 ) -> tuple[str, str]:
     if not query.strip():
         return "질문을 입력해주세요.", ""
 
-    response = runner(
-        ChatRequest(
-            query=query.strip(),
-            top_k=int(top_k) if top_k is not None else None,
-            use_llm=use_llm,
-            engine=ChatEngine(engine) if engine else None,
-        )
-    )
+    response = runner(ChatRequest(query=query.strip()))
     return response.answer, format_citations(response)
 
 

@@ -4,15 +4,16 @@ from app.chat.ui.gradio_app import build_demo, format_citations, format_metadata
 
 def fake_runner(request: ChatRequest) -> ChatResponse:
     assert request.query == "S0 비승인약물이 뭐야?"
-    assert request.top_k in {None, 3}
-    assert request.engine in {None, ChatEngine.GRAPH}
+    assert request.top_k is None
+    assert request.use_llm is None
+    assert request.engine is None
     return ChatResponse(
         answer="S0은 비승인 약물입니다.",
         route="rag",
         query=request.query,
-        engine=request.engine or ChatEngine.GRAPH,
-        top_k=request.top_k or 3,
-        use_llm=request.use_llm if request.use_llm is not None else False,
+        engine=ChatEngine.GRAPH,
+        top_k=3,
+        use_llm=False,
         citations=[
             CitationSummary(
                 chunk_id="wada_prohibited_list_2026_ko:p5:c0",
@@ -26,20 +27,7 @@ def fake_runner(request: ChatRequest) -> ChatResponse:
     )
 
 
-def test_respond_returns_answer_and_citations() -> None:
-    answer, citations = respond(
-        " S0 비승인약물이 뭐야? ",
-        top_k=3,
-        use_llm=False,
-        engine="graph",
-        runner=fake_runner,
-    )
-
-    assert "S0" in answer
-    assert "wada_prohibited_list_2026_ko:p5:c0" in citations
-
-
-def test_respond_can_use_runtime_policy_defaults() -> None:
+def test_respond_returns_answer_and_citations_with_runtime_policy_defaults() -> None:
     answer, citations = respond(" S0 비승인약물이 뭐야? ", runner=fake_runner)
 
     assert "S0" in answer
@@ -47,7 +35,7 @@ def test_respond_can_use_runtime_policy_defaults() -> None:
 
 
 def test_respond_handles_empty_query() -> None:
-    answer, citations = respond("   ", 3, False, "graph", runner=fake_runner)
+    answer, citations = respond("   ", runner=fake_runner)
 
     assert answer == "질문을 입력해주세요."
     assert citations == ""
