@@ -61,3 +61,4 @@ def test_readiness_reports_ready_for_local_runtime_dependencies(tmp_path: Path, 
     assert checks["chroma_collection"].ready is True
     assert checks["openai_api_key"].ready is True
     assert checks["runtime_import"].ready is True
+    assert checks["runtime_policy_import"].ready is True

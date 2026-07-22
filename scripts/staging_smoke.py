@@ -119,6 +119,26 @@ def run_smoke(base_url: str, timeout: float = DEFAULT_TIMEOUT_SECONDS) -> list[S
 
     status_code, body, _ = request_json(
         "POST",
+        f"{base_url}/api/v1/chat-responses",
+        payload={"query": "약물 반감기로 경기기간 복용 가능 여부를 판단해도 돼?"},
+        timeout=timeout,
+    )
+    results.append(
+        pass_if(
+            "public_pharmacology_policy",
+            status_code == 200
+            and bool(body.get("answer"))
+            and body.get("pharmacology_status") in {"found", "not_found"}
+            and not body.get("errors"),
+            (
+                f"status={status_code}, route={body.get('route')}, "
+                f"pharmacology_status={body.get('pharmacology_status')}, errors={body.get('errors')}"
+            ),
+        )
+    )
+
+    status_code, body, _ = request_json(
+        "POST",
         f"{base_url}/api/v1/debug/chat-responses",
         payload={
             "query": "S0 비승인약물이 뭐야?",

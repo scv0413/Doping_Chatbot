@@ -55,6 +55,7 @@ def test_ready_endpoint_reports_runtime_dependencies() -> None:
         "chroma_collection",
         "openai_api_key",
         "runtime_import",
+        "runtime_policy_import",
     }.issubset(check_names)
 
 

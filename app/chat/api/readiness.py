@@ -32,6 +32,7 @@ def build_readiness_response() -> ReadinessResponse:
         check_chroma_collection(),
         check_openai_api_key(),
         check_runtime_import(),
+        check_runtime_policy_import(),
     ]
     status = "ready" if all(check.ready for check in checks) else "not_ready"
     return ReadinessResponse(status=status, checks=checks)
@@ -143,4 +144,21 @@ def check_runtime_import() -> ReadinessCheck:
         name="runtime_import",
         ready=callable(run_chat),
         detail="run_chat importable",
+    )
+
+
+def check_runtime_policy_import() -> ReadinessCheck:
+    try:
+        from app.chat.policy.runtime_policy import decide_runtime_policy  # noqa: PLC0415
+    except Exception as exc:
+        return ReadinessCheck(
+            name="runtime_policy_import",
+            ready=False,
+            detail=f"unavailable: {type(exc).__name__}: {exc}",
+        )
+
+    return ReadinessCheck(
+        name="runtime_policy_import",
+        ready=callable(decide_runtime_policy),
+        detail="decide_runtime_policy importable",
     )
