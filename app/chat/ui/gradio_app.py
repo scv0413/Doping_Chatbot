@@ -48,9 +48,9 @@ def respond(
     use_llm: bool | None = None,
     engine: str | None = None,
     runner: ChatRunner = run_chat,
-) -> tuple[str, str, str]:
+) -> tuple[str, str]:
     if not query.strip():
-        return "질문을 입력해주세요.", "", ""
+        return "질문을 입력해주세요.", ""
 
     response = runner(
         ChatRequest(
@@ -60,7 +60,7 @@ def respond(
             engine=ChatEngine(engine) if engine else None,
         )
     )
-    return response.answer, format_citations(response), format_metadata(response)
+    return response.answer, format_citations(response)
 
 
 def build_demo(runner: ChatRunner = run_chat) -> gr.Blocks:
@@ -78,18 +78,16 @@ def build_demo(runner: ChatRunner = run_chat) -> gr.Blocks:
 
         answer = gr.Markdown(label="답변")
         citations = gr.Markdown(label="근거")
-        metadata = gr.Markdown(label="실행 정보")
-
         submit.click(
             fn=lambda user_query: respond(user_query, runner=runner),
             inputs=[query],
-            outputs=[answer, citations, metadata],
+            outputs=[answer, citations],
         )
 
         query.submit(
             fn=lambda user_query: respond(user_query, runner=runner),
             inputs=[query],
-            outputs=[answer, citations, metadata],
+            outputs=[answer, citations],
         )
 
     return demo

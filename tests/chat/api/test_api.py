@@ -58,7 +58,23 @@ def test_root_endpoint_points_to_docs() -> None:
     assert response.json()["docs"] == "/docs"
 
 
-def test_create_chat_response_endpoint() -> None:
+def test_create_chat_response_endpoint_accepts_query_only() -> None:
+    client = build_test_client()
+
+    response = client.post(
+        "/api/v1/chat-responses",
+        json={"query": "도핑 검사관 신분이 불분명하면 어떻게 해?"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["answer"].startswith("stub answer")
+    assert body["route"] == "rag"
+    assert body["engine"] == ChatEngine.GRAPH
+    assert body["retrieval_attempts"] == 1
+
+
+def test_create_chat_response_rejects_internal_options() -> None:
     client = build_test_client()
 
     response = client.post(
@@ -71,12 +87,28 @@ def test_create_chat_response_endpoint() -> None:
         },
     )
 
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "validation_error"
+
+
+def test_create_debug_chat_response_accepts_internal_options() -> None:
+    client = build_test_client()
+
+    response = client.post(
+        "/api/v1/debug/chat-responses",
+        json={
+            "query": "도핑 검사관 신분이 불분명하면 어떻게 해?",
+            "top_k": 3,
+            "use_llm": False,
+            "engine": "graph",
+        },
+    )
+
     assert response.status_code == 200
     body = response.json()
-    assert body["answer"].startswith("stub answer")
-    assert body["route"] == "rag"
+    assert body["top_k"] == 3
+    assert body["use_llm"] is False
     assert body["engine"] == ChatEngine.GRAPH
-    assert body["retrieval_attempts"] == 1
 
 
 def test_create_chat_response_accepts_policy_defaults() -> None:
@@ -99,7 +131,7 @@ def test_create_chat_response_returns_standard_validation_error() -> None:
 
     response = client.post(
         "/api/v1/chat-responses",
-        json={"query": "", "top_k": 0},
+        json={"query": ""},
     )
 
     assert response.status_code == 422
@@ -128,12 +160,7 @@ def test_unhandled_exception_returns_standard_internal_error() -> None:
 
     response = client.post(
         "/api/v1/chat-responses",
-        json={
-            "query": "도핑 검사관 신분이 불분명하면 어떻게 해?",
-            "top_k": 3,
-            "use_llm": False,
-            "engine": "graph",
-        },
+        json={"query": "도핑 검사관 신분이 불분명하면 어떻게 해?"},
     )
 
     assert response.status_code == 500
@@ -158,7 +185,7 @@ def test_validation_error_includes_request_id_in_header_and_body() -> None:
     response = client.post(
         "/api/v1/chat-responses",
         headers={REQUEST_ID_HEADER: "validation-request-123"},
-        json={"query": "", "top_k": 0},
+        json={"query": ""},
     )
 
     assert response.status_code == 422
@@ -175,12 +202,7 @@ def test_unhandled_error_includes_request_id_in_header_and_body() -> None:
     response = client.post(
         "/api/v1/chat-responses",
         headers={REQUEST_ID_HEADER: "internal-error-request-123"},
-        json={
-            "query": "도핑 검사관 신분이 불분명하면 어떻게 해?",
-            "top_k": 3,
-            "use_llm": False,
-            "engine": "graph",
-        },
+        json={"query": "도핑 검사관 신분이 불분명하면 어떻게 해?"},
     )
 
     assert response.status_code == 500

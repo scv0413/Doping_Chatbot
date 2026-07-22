@@ -26,8 +26,8 @@ def fake_runner(request: ChatRequest) -> ChatResponse:
     )
 
 
-def test_respond_returns_answer_citations_and_metadata() -> None:
-    answer, citations, metadata = respond(
+def test_respond_returns_answer_and_citations() -> None:
+    answer, citations = respond(
         " S0 비승인약물이 뭐야? ",
         top_k=3,
         use_llm=False,
@@ -37,24 +37,20 @@ def test_respond_returns_answer_citations_and_metadata() -> None:
 
     assert "S0" in answer
     assert "wada_prohibited_list_2026_ko:p5:c0" in citations
-    assert "route" in metadata
-    assert "retrieval_attempts" in metadata
 
 
 def test_respond_can_use_runtime_policy_defaults() -> None:
-    answer, citations, metadata = respond(" S0 비승인약물이 뭐야? ", runner=fake_runner)
+    answer, citations = respond(" S0 비승인약물이 뭐야? ", runner=fake_runner)
 
     assert "S0" in answer
     assert "wada_prohibited_list_2026_ko:p5:c0" in citations
-    assert "route" in metadata
 
 
 def test_respond_handles_empty_query() -> None:
-    answer, citations, metadata = respond("   ", 3, False, "graph", runner=fake_runner)
+    answer, citations = respond("   ", 3, False, "graph", runner=fake_runner)
 
     assert answer == "질문을 입력해주세요."
     assert citations == ""
-    assert metadata == ""
 
 
 def test_format_helpers_handle_no_citations() -> None:
