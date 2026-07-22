@@ -76,3 +76,21 @@ LangSmith 실험도 실행했다.
 선수와 지도자는 반감기를 듣고 안심하거나 출전 여부를 결정하려 할 수 있다. 그래서 답변은 평균값을 주되, 반드시 경기기간, 금지분류, 소변 농도 기준, 제품명/성분명, 복용량, 마지막 복용 시각, 경기 시작 시각, 전문가 확인을 함께 요구해야 한다.
 
 또한 LangSmith eval로 남긴 이유는 포트폴리오에서 “좋아 보이는 답변을 만들었다”가 아니라 “위험한 도메인의 답변 품질을 반복 측정하고 개선했다”는 증거를 보여주기 위해서다.
+
+
+## use_llm=True 비교 실행
+
+formatter 기준선 이후 같은 데이터셋을 `use_llm=True`로 실행했다.
+
+- experiment: `half-life-answer-chain-top3-830eacfe`
+- URL: https://smith.langchain.com/o/2d4720fb-5dfa-4666-983e-680c70b9ab87/datasets/94d00e9d-ebcd-48d8-8623-d1d6ca9d9950/compare?selectedSessions=0cc923b1-7d1c-429e-9c50-4d13555e2b03
+- local average score: 1.0
+
+비교 판단은 다음과 같다.
+
+- `use_llm=False` formatter는 빠르고 비용이 낮으며, 정해진 안전 문구를 안정적으로 유지한다.
+- `use_llm=True` answer chain도 동일한 half-life 안전 기준을 통과했다.
+- 다만 LLM 실행은 formatter보다 지연시간과 비용이 증가한다.
+- 현재 단계에서는 반감기처럼 안전 문구가 중요한 질문은 formatter 기준선을 기본 품질선으로 두고, LLM은 자연어 품질 개선 또는 복잡한 맥락 정리에 사용할 후보로 보는 것이 적절하다.
+
+발표 관점에서는 “LLM을 붙였더니 좋아졌다”가 아니라 “LLM을 붙여도 기존 안전 기준이 유지되는지 LangSmith로 비교 검증했다”고 말하는 것이 더 설득력 있다.
