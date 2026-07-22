@@ -16,6 +16,7 @@ from app.chat.evals.langsmith_retrieval_eval import (
     upsert_dataset_examples,
 )
 from app.chat.graph.graph import run_chat_graph
+from app.chat.pharmacology.service import should_run_pharmacology_info
 from app.chat.pipeline.chat_pipeline import ChatPipelineResult
 from app.chat.retrieval.query_rewriter import rewrite_query
 
@@ -53,8 +54,12 @@ def build_graph_tool_target(
         drug_output = result.drug_search_tool_output
         drug_result = drug_output.result if drug_output else None
         drug_errors = drug_output.errors if drug_output else []
+        pharmacology_output = result.pharmacology_info_tool_output
+        pharmacology_result = pharmacology_output.result if pharmacology_output else None
+        pharmacology_errors = pharmacology_output.errors if pharmacology_output else []
 
         return {
+            "query": query,
             "actual_route": result.decision.route.value,
             "route_reason": result.decision.reason,
             "matched_terms": result.decision.matched_terms,
@@ -82,6 +87,13 @@ def build_graph_tool_target(
             "drug_tool_matched_substances": drug_result.matched_substances if drug_result else [],
             "drug_tool_prohibited_categories": drug_result.prohibited_categories if drug_result else [],
             "drug_tool_errors": [error.model_dump() for error in drug_errors],
+            "pharmacology_tool_name": pharmacology_output.tool_name if pharmacology_output else None,
+            "pharmacology_tool_query": pharmacology_output.query if pharmacology_output else None,
+            "pharmacology_tool_status": pharmacology_result.status.value if pharmacology_result else None,
+            "pharmacology_tool_substance_name": pharmacology_result.substance_name if pharmacology_result else None,
+            "pharmacology_tool_matched_terms": pharmacology_result.matched_terms if pharmacology_result else [],
+            "pharmacology_tool_has_half_life": bool(pharmacology_result and pharmacology_result.half_life),
+            "pharmacology_tool_errors": [error.model_dump() for error in pharmacology_errors],
             "match_count": len(result.retrieval_matches),
             "source_ids": [match.source_id for match in result.retrieval_matches],
             "chunk_ids": [match.chunk_id for match in result.retrieval_matches],
@@ -104,6 +116,10 @@ def should_have_rag_tool(route: str | None) -> bool:
 
 def should_have_drug_tool(route: str | None) -> bool:
     return route in {"drug_search", "drug_search_with_rag"}
+
+
+def should_have_pharmacology_tool(query: str | None) -> bool:
+    return should_run_pharmacology_info(str(query or ""))
 
 
 def score_rag_tool_contract(outputs: dict[str, Any]) -> bool:
@@ -137,11 +153,27 @@ def score_drug_tool_contract(outputs: dict[str, Any]) -> bool:
     return drug_tool_name == "drug_search_tool" and bool(drug_tool_status) and not drug_tool_errors
 
 
+def score_pharmacology_tool_contract(outputs: dict[str, Any]) -> bool:
+    pharmacology_tool_name = outputs.get("pharmacology_tool_name")
+    pharmacology_tool_status = outputs.get("pharmacology_tool_status")
+    pharmacology_tool_errors = list(outputs.get("pharmacology_tool_errors", []))
+
+    if not should_have_pharmacology_tool(outputs.get("query")):
+        return pharmacology_tool_name is None
+
+    return (
+        pharmacology_tool_name == "pharmacology_info_tool"
+        and bool(pharmacology_tool_status)
+        and not pharmacology_tool_errors
+    )
+
+
 def tool_contract_evaluator(outputs: dict[str, Any], reference_outputs: dict[str, Any]) -> dict[str, Any]:
     del reference_outputs
     rag_ok = score_rag_tool_contract(outputs)
     drug_ok = score_drug_tool_contract(outputs)
-    score = int(rag_ok and drug_ok)
+    pharmacology_ok = score_pharmacology_tool_contract(outputs)
+    score = int(rag_ok and drug_ok and pharmacology_ok)
 
     return {
         "key": "tool_contract",
@@ -149,7 +181,9 @@ def tool_contract_evaluator(outputs: dict[str, Any], reference_outputs: dict[str
         "comment": (
             f"route={outputs.get('actual_route')}, "
             f"rag_tool={outputs.get('rag_tool_name') or outputs.get('tool_name')}, "
-            f"drug_tool={outputs.get('drug_tool_name')}, rag_ok={rag_ok}, drug_ok={drug_ok}"
+            f"drug_tool={outputs.get('drug_tool_name')}, "
+            f"pharmacology_tool={outputs.get('pharmacology_tool_name')}, "
+            f"rag_ok={rag_ok}, drug_ok={drug_ok}, pharmacology_ok={pharmacology_ok}"
         ),
     }
 
@@ -179,12 +213,12 @@ def run_langsmith_graph_tool_eval(
             tool_contract_evaluator,
         ],
         experiment_prefix=f"graph-tool-top{top_k}-llm-{use_llm}",
-        description="LangGraph retrieval and drug search evaluated through tool contracts.",
+        description="LangGraph retrieval, drug search, and pharmacology info evaluated through tool contracts.",
         metadata={
             "top_k": top_k,
             "use_llm": use_llm,
             "runner": "langgraph",
-            "tools": ["rag_search_tool", "drug_search_tool"],
+            "tools": ["rag_search_tool", "drug_search_tool", "pharmacology_info_tool"],
             "project": settings.langsmith_project,
         },
         client=resolved_client,

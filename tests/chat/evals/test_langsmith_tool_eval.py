@@ -1,9 +1,15 @@
 from app.chat.drug_search.schemas import DrugRiskStatus, DrugSearchInput, DrugSearchResult
 from app.chat.evals.langsmith_tool_eval import build_graph_tool_target, tool_contract_evaluator
+from app.chat.pharmacology.schemas import HalfLifeInfo, PharmacologyInfoResult, PharmacologyInfoStatus
 from app.chat.pipeline.chat_pipeline import ChatPipelineResult
 from app.chat.retrieval.schemas import RetrievalMatch, RetrievalMetadata
 from app.chat.router.intent_router import ChatRoute, RouteDecision
-from app.chat.tools.schemas import DrugSearchToolOutput, RagSearchResult, RagSearchToolOutput
+from app.chat.tools.schemas import (
+    DrugSearchToolOutput,
+    PharmacologyInfoToolOutput,
+    RagSearchResult,
+    RagSearchToolOutput,
+)
 
 
 def build_sample_match() -> RetrievalMatch:
@@ -53,6 +59,21 @@ def build_sample_drug_output(query: str) -> DrugSearchToolOutput:
     )
 
 
+def build_sample_pharmacology_output(query: str) -> PharmacologyInfoToolOutput:
+    return PharmacologyInfoToolOutput(
+        query=query,
+        result=PharmacologyInfoResult(
+            status=PharmacologyInfoStatus.FOUND,
+            query=query,
+            substance_name="pseudoephedrine",
+            matched_terms=["슈도에페드린"],
+            half_life=HalfLifeInfo(typical_range="대략 4-8시간", unit="hours"),
+            recommended_action="복용량과 마지막 복용 시각을 확인하세요.",
+            safety_notes=["반감기만으로 출전 가능 여부를 확정하지 않습니다."],
+        ),
+    )
+
+
 def fake_tool_graph_runner(query: str, top_k: int, use_llm: bool, query_rewriter) -> ChatPipelineResult:
     assert top_k == 3
     assert use_llm is False
@@ -69,6 +90,8 @@ def fake_tool_graph_runner(query: str, top_k: int, use_llm: bool, query_rewriter
             ),
             drug_result=build_sample_drug_output(query).result,
             drug_search_tool_output=build_sample_drug_output(query),
+            pharmacology_result=build_sample_pharmacology_output(query).result,
+            pharmacology_info_tool_output=build_sample_pharmacology_output(query),
             retrieval_query=query,
             rewritten_query=rewritten_query,
             rag_search_output=build_sample_rag_output(match),
@@ -89,14 +112,14 @@ def fake_tool_graph_runner(query: str, top_k: int, use_llm: bool, query_rewriter
     )
 
 
-def test_graph_tool_target_returns_rag_and_drug_tool_eval_shape() -> None:
+def test_graph_tool_target_returns_rag_drug_and_pharmacology_tool_eval_shape() -> None:
     target = build_graph_tool_target(
         top_k=3,
         use_llm=False,
         graph_runner=fake_tool_graph_runner,
     )
 
-    outputs = target({"query": "슈도에페드린 경기기간 중 먹어도 돼?", "retrieval_terms": ["상시 금지"]})
+    outputs = target({"query": "슈도에페드린 반감기가 얼마나 돼?", "retrieval_terms": ["상시 금지"]})
 
     assert outputs["actual_route"] == "drug_search_with_rag"
     assert outputs["rag_tool_name"] == "rag_search_tool"
@@ -108,10 +131,15 @@ def test_graph_tool_target_returns_rag_and_drug_tool_eval_shape() -> None:
     assert outputs["drug_tool_status"] == "prohibited_possible"
     assert outputs["drug_tool_matched_substances"] == ["슈도에페드린"]
     assert outputs["drug_tool_prohibited_categories"] == ["S6_120"]
+    assert outputs["pharmacology_tool_name"] == "pharmacology_info_tool"
+    assert outputs["pharmacology_tool_status"] == "found"
+    assert outputs["pharmacology_tool_substance_name"] == "pseudoephedrine"
+    assert outputs["pharmacology_tool_has_half_life"] is True
 
 
 def test_tool_contract_evaluator_scores_rag_only_output() -> None:
     outputs = {
+        "query": "S0 비승인약물이 뭐야?",
         "actual_route": "rag",
         "rag_tool_name": "rag_search_tool",
         "rag_tool_result_count": 1,
@@ -121,6 +149,9 @@ def test_tool_contract_evaluator_scores_rag_only_output() -> None:
         "drug_tool_name": None,
         "drug_tool_status": None,
         "drug_tool_errors": [],
+        "pharmacology_tool_name": None,
+        "pharmacology_tool_status": None,
+        "pharmacology_tool_errors": [],
     }
 
     result = tool_contract_evaluator(outputs, {})
@@ -131,6 +162,7 @@ def test_tool_contract_evaluator_scores_rag_only_output() -> None:
 
 def test_tool_contract_evaluator_scores_drug_search_only_output() -> None:
     outputs = {
+        "query": "타이레놀 먹어도 돼?",
         "actual_route": "drug_search",
         "rag_tool_name": None,
         "rag_tool_result_count": 0,
@@ -140,6 +172,9 @@ def test_tool_contract_evaluator_scores_drug_search_only_output() -> None:
         "drug_tool_name": "drug_search_tool",
         "drug_tool_status": "needs_verification",
         "drug_tool_errors": [],
+        "pharmacology_tool_name": None,
+        "pharmacology_tool_status": None,
+        "pharmacology_tool_errors": [],
     }
 
     result = tool_contract_evaluator(outputs, {})
@@ -149,6 +184,7 @@ def test_tool_contract_evaluator_scores_drug_search_only_output() -> None:
 
 def test_tool_contract_evaluator_scores_drug_search_with_rag_output() -> None:
     outputs = {
+        "query": "슈도에페드린 경기기간 중 먹어도 돼?",
         "actual_route": "drug_search_with_rag",
         "rag_tool_name": "rag_search_tool",
         "rag_tool_result_count": 1,
@@ -158,6 +194,9 @@ def test_tool_contract_evaluator_scores_drug_search_with_rag_output() -> None:
         "drug_tool_name": "drug_search_tool",
         "drug_tool_status": "prohibited_possible",
         "drug_tool_errors": [],
+        "pharmacology_tool_name": None,
+        "pharmacology_tool_status": None,
+        "pharmacology_tool_errors": [],
     }
 
     result = tool_contract_evaluator(outputs, {})
@@ -167,6 +206,7 @@ def test_tool_contract_evaluator_scores_drug_search_with_rag_output() -> None:
 
 def test_tool_contract_evaluator_fails_when_required_drug_tool_is_missing() -> None:
     outputs = {
+        "query": "타이레놀 먹어도 돼?",
         "actual_route": "drug_search",
         "rag_tool_name": None,
         "rag_tool_result_count": 0,
@@ -176,6 +216,9 @@ def test_tool_contract_evaluator_fails_when_required_drug_tool_is_missing() -> N
         "drug_tool_name": None,
         "drug_tool_status": None,
         "drug_tool_errors": [],
+        "pharmacology_tool_name": None,
+        "pharmacology_tool_status": None,
+        "pharmacology_tool_errors": [],
     }
 
     result = tool_contract_evaluator(outputs, {})
@@ -185,6 +228,7 @@ def test_tool_contract_evaluator_fails_when_required_drug_tool_is_missing() -> N
 
 def test_tool_contract_evaluator_fails_when_rag_tool_chunks_diverge() -> None:
     outputs = {
+        "query": "S0 비승인약물이 뭐야?",
         "actual_route": "rag",
         "rag_tool_name": "rag_search_tool",
         "rag_tool_result_count": 1,
@@ -194,6 +238,53 @@ def test_tool_contract_evaluator_fails_when_rag_tool_chunks_diverge() -> None:
         "drug_tool_name": None,
         "drug_tool_status": None,
         "drug_tool_errors": [],
+        "pharmacology_tool_name": None,
+        "pharmacology_tool_status": None,
+        "pharmacology_tool_errors": [],
+    }
+
+    result = tool_contract_evaluator(outputs, {})
+
+    assert result["score"] == 0
+
+
+def test_tool_contract_evaluator_scores_half_life_pharmacology_output() -> None:
+    outputs = {
+        "query": "슈도에페드린 반감기가 얼마나 돼?",
+        "actual_route": "drug_search_with_rag",
+        "rag_tool_name": "rag_search_tool",
+        "rag_tool_result_count": 1,
+        "rag_tool_errors": [],
+        "chunk_ids": ["a:p1:c0"],
+        "rag_tool_chunk_ids": ["a:p1:c0"],
+        "drug_tool_name": "drug_search_tool",
+        "drug_tool_status": "prohibited_possible",
+        "drug_tool_errors": [],
+        "pharmacology_tool_name": "pharmacology_info_tool",
+        "pharmacology_tool_status": "found",
+        "pharmacology_tool_errors": [],
+    }
+
+    result = tool_contract_evaluator(outputs, {})
+
+    assert result["score"] == 1
+
+
+def test_tool_contract_evaluator_fails_when_half_life_tool_is_missing() -> None:
+    outputs = {
+        "query": "슈도에페드린 반감기가 얼마나 돼?",
+        "actual_route": "drug_search_with_rag",
+        "rag_tool_name": "rag_search_tool",
+        "rag_tool_result_count": 1,
+        "rag_tool_errors": [],
+        "chunk_ids": ["a:p1:c0"],
+        "rag_tool_chunk_ids": ["a:p1:c0"],
+        "drug_tool_name": "drug_search_tool",
+        "drug_tool_status": "prohibited_possible",
+        "drug_tool_errors": [],
+        "pharmacology_tool_name": None,
+        "pharmacology_tool_status": None,
+        "pharmacology_tool_errors": [],
     }
 
     result = tool_contract_evaluator(outputs, {})
