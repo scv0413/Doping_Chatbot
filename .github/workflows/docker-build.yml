@@ -1,0 +1,70 @@
+name: Docker Build Verification
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen --extra dev
+
+      - name: Lint
+        run: uv run ruff check app tests
+
+      - name: Test
+        run: uv run pytest
+
+      - name: Build Docker image
+        run: docker build -t doping-chatbot-api:ci .
+
+      - name: Run Docker container
+        run: |
+          docker run -d \
+            --name doping-chatbot-api-ci \
+            -p 8000:8000 \
+            -e APP_ENV=ci \
+            doping-chatbot-api:ci
+
+      - name: Check API health
+        run: |
+          python - <<'PY'
+          import time
+          import urllib.request
+
+          for _ in range(30):
+              try:
+                  urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=2).read()
+                  urllib.request.urlopen("http://127.0.0.1:8000/ready", timeout=2).read()
+                  break
+              except Exception:
+                  time.sleep(1)
+          else:
+              raise SystemExit("API did not become healthy")
+          PY
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker logs doping-chatbot-api-ci || true
+
+      - name: Stop Docker container
+        if: always()
+        run: docker rm -f doping-chatbot-api-ci || true

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 
 from app.chat.api.dependencies import ChatService, get_chat_service
 from app.chat.config import settings
+from app.chat.api.readiness import ReadinessResponse, build_readiness_response
 from app.chat.runtime import ChatRequest, ChatResponse
 
 router = APIRouter()
@@ -14,6 +15,11 @@ def health_check() -> dict[str, str]:
         "app": settings.app_name,
         "env": settings.app_env,
     }
+
+
+@router.get("/ready", response_model=ReadinessResponse, tags=["system"])
+def readiness_check() -> ReadinessResponse:
+    return build_readiness_response()
 
 
 @router.post("/api/v1/chat-responses", response_model=ChatResponse, tags=["chat"])

@@ -1,15 +1,18 @@
 from fastapi import FastAPI
 
+from app.chat.api.logging import configure_logging, request_logging_middleware
 from app.chat.api.routes import router
 from app.chat.config import settings
 
 
 def create_app() -> FastAPI:
+    configure_logging()
     app = FastAPI(
         title="Doping Chatbot API",
         version="0.1.0",
         description="REST API for the anti-doping RAG chatbot runtime.",
     )
+    app.middleware("http")(request_logging_middleware)
     app.include_router(router)
 
     @app.get("/", tags=["system"])
