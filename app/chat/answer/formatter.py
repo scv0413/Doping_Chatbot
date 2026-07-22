@@ -27,6 +27,17 @@ def format_answer(
     citation_limit: int = 3,
 ) -> str:
     retrieval_matches = retrieval_matches or []
+
+    if pharmacology_result:
+        return format_pharmacology_answer(
+            query=query,
+            decision=decision,
+            drug_result=drug_result,
+            pharmacology_result=pharmacology_result,
+            retrieval_matches=retrieval_matches,
+            citation_limit=citation_limit,
+        )
+
     sections = [
         "## 답변 요약",
         *format_summary(
@@ -72,6 +83,60 @@ def format_answer(
         ),
     ]
 
+    return "\n".join(sections).strip()
+
+
+def format_pharmacology_answer(
+    query: str,
+    decision: RouteDecision,
+    drug_result: DrugSearchResult | None,
+    pharmacology_result: PharmacologyInfoResult,
+    retrieval_matches: list[RetrievalMatch],
+    citation_limit: int,
+) -> str:
+    sections = [
+        "## 답변 요약",
+        *format_summary(
+            decision=decision,
+            drug_result=drug_result,
+            pharmacology_result=pharmacology_result,
+            has_retrieval=bool(retrieval_matches),
+        ),
+        "- 반감기는 참고용이며 도핑검사 검출 가능 시간이나 출전 가능 여부를 확정하지 않습니다.",
+        "",
+        "## 반감기 참고",
+        *format_pharmacology_result(pharmacology_result),
+        "",
+        "## 지금 확인해야 할 정보",
+        *format_follow_up_checks(drug_result=drug_result, pharmacology_result=pharmacology_result),
+        "- 추가로 알려주면 더 정확히 도와줄 정보: 제품명, 성분명, 1회 복용량, 총 복용량, 마지막 복용 시각, 경기 시작 시각, 경기기간 여부",
+        "",
+        "## 도핑 규정상 주의",
+        *format_drug_or_missing_findings(drug_result),
+        *format_action_guidance(
+            query=query,
+            drug_result=drug_result,
+            pharmacology_result=pharmacology_result,
+            retrieval_matches=retrieval_matches,
+        ),
+        "",
+        "## 근거 핵심",
+        *format_evidence_highlights(retrieval_matches=retrieval_matches, limit=citation_limit),
+        "",
+        "## 근거",
+        *format_citations(
+            retrieval_matches=retrieval_matches,
+            pharmacology_result=pharmacology_result,
+            limit=citation_limit,
+        ),
+        "",
+        "## 주의",
+        *format_safety_notes(
+            decision=decision,
+            drug_result=drug_result,
+            pharmacology_result=pharmacology_result,
+        ),
+    ]
     return "\n".join(sections).strip()
 
 
@@ -125,6 +190,12 @@ def format_findings(
         lines.append("- 검색된 문서 근거가 없습니다.")
 
     return lines
+
+
+def format_drug_or_missing_findings(drug_result: DrugSearchResult | None) -> list[str]:
+    if drug_result:
+        return format_drug_findings(drug_result)
+    return ["- KADA 약물검색 결과가 없으므로 제품명 또는 성분명을 다시 확인해야 합니다."]
 
 
 def format_drug_findings(drug_result: DrugSearchResult) -> list[str]:

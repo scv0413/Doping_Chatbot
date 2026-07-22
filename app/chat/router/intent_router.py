@@ -24,6 +24,17 @@ DRUG_SUBSTANCE_TERMS = {
     "테스토스테론",
     "testosterone",
     "타이레놀",
+    "에페드린",
+    "ephedrine",
+    "메틸에페드린",
+    "메칠에페드린",
+    "methylephedrine",
+    "카틴",
+    "cathine",
+    "노르슈도에페드린",
+    "norpseudoephedrine",
+    "트라마돌",
+    "tramadol",
 }
 
 DRUG_CONTEXT_TERMS = {

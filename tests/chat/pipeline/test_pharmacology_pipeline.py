@@ -48,6 +48,10 @@ def test_pipeline_combines_drug_search_pharmacology_and_rag_manual() -> None:
     assert result.pharmacology_result is not None
     assert result.pharmacology_result.substance_name == "pseudoephedrine"
     assert result.retrieval_matches[0].source_id == "wada_prohibited_list_2026_ko"
+    assert "## 반감기 참고" in result.answer
+    assert "## 지금 확인해야 할 정보" in result.answer
+    assert "## 도핑 규정상 주의" in result.answer
     assert "일반적 반감기 참고" in result.answer
     assert "검출 가능 시간이나 출전 가능 여부" in result.answer
+    assert "추가로 알려주면 더 정확히 도와줄 정보" in result.answer
     assert "PubChem" in result.answer

@@ -26,6 +26,7 @@ def should_run_pharmacology_info(query: str) -> bool:
 
 def search_pharmacology_info(query: str) -> PharmacologyInfoResult:
     normalized_query = normalize_text(query)
+    candidate_matches: list[tuple[int, Mapping[str, Any], list[str]]] = []
 
     for record in PHARMACOLOGY_REFERENCE_RECORDS.values():
         matched_terms = [
@@ -34,7 +35,12 @@ def search_pharmacology_info(query: str) -> PharmacologyInfoResult:
             if normalize_text(alias) in normalized_query
         ]
         if matched_terms:
-            return build_found_result(query=query, record=record, matched_terms=matched_terms)
+            longest_match = max(len(normalize_text(term)) for term in matched_terms)
+            candidate_matches.append((longest_match, record, matched_terms))
+
+    if candidate_matches:
+        _, record, matched_terms = max(candidate_matches, key=lambda item: item[0])
+        return build_found_result(query=query, record=record, matched_terms=matched_terms)
 
     return PharmacologyInfoResult(
         status=PharmacologyInfoStatus.NOT_FOUND,
