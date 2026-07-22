@@ -44,21 +44,33 @@ jobs:
             -e APP_ENV=ci \
             doping-chatbot-api:ci
 
-      - name: Check API health
+      - name: Check container user
+        run: |
+          test "$(docker exec doping-chatbot-api-ci id -u)" != "0"
+
+      - name: Check API health and readiness shape
         run: |
           python - <<'PY'
+          import json
           import time
           import urllib.request
 
+          def get_json(url: str) -> dict:
+              with urllib.request.urlopen(url, timeout=2) as response:
+                  return json.loads(response.read().decode("utf-8"))
+
           for _ in range(30):
               try:
-                  urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=2).read()
-                  urllib.request.urlopen("http://127.0.0.1:8000/ready", timeout=2).read()
+                  health = get_json("http://127.0.0.1:8000/health")
+                  ready = get_json("http://127.0.0.1:8000/ready")
+                  assert health["status"] == "ok"
+                  assert ready["status"] in {"ready", "not_ready"}
+                  assert isinstance(ready.get("checks"), list)
                   break
               except Exception:
                   time.sleep(1)
           else:
-              raise SystemExit("API did not become healthy")
+              raise SystemExit("API did not expose health/readiness JSON")
           PY
 
       - name: Show container logs on failure

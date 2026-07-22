@@ -53,7 +53,9 @@ def test_github_actions_builds_and_smoke_tests_docker_image() -> None:
 
     assert "docker build -t doping-chatbot-api:ci ." in workflow
     assert "docker run -d" in workflow
+    assert "docker exec doping-chatbot-api-ci id -u" in workflow
     assert "http://127.0.0.1:8000/health" in workflow
     assert "http://127.0.0.1:8000/ready" in workflow
+    assert "ready[\"status\"] in {\"ready\", \"not_ready\"}" in workflow
     assert "uv run pytest" in workflow
     assert "uv run ruff check app tests" in workflow

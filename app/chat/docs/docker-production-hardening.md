@@ -180,3 +180,44 @@ Endpoint smoke:
 - readiness: pass
 - JSON request logging: pass
 - public/debug API split: pass
+
+
+## CI Readiness 기준 정리
+
+CI에서 Docker image를 build한 뒤 실행하는 컨테이너에는 `.env`, `data/processed`, `data/indexes`가 주입되지 않는다. 따라서 CI 컨테이너의 `/ready`는 `ready`가 아니라 `not_ready`일 수 있다.
+
+이 상태는 실패가 아니다. CI의 목적은 다음을 확인하는 것이다.
+
+- image build 성공
+- FastAPI process start 성공
+- container가 non-root user로 실행됨
+- `/health`가 200과 `status=ok`를 반환
+- `/ready`가 200과 readiness JSON shape를 반환
+
+반대로 실제 staging/운영 smoke에서는 data volume, Chroma index, API key가 주입되어야 하므로 `scripts/staging_smoke.py`가 `/ready`의 `status=ready`를 요구한다.
+
+정리하면 다음과 같다.
+
+| 환경 | `/ready` 기대값 | 이유 |
+|---|---|---|
+| CI Docker build verification | `ready` 또는 `not_ready` JSON | secret/data 없이 image 구조만 검증 |
+| Local/Staging smoke with data/env | `ready` | 실제 serving 준비 상태 검증 |
+
+## Local Docker Verification 결과
+
+실제 Docker Desktop 환경에서 다음을 확인했다.
+
+```bash
+docker build -t doping-chatbot-api:local-verify .
+docker run -d --name doping-chatbot-api-local-verify -p 8011:8000 -e APP_ENV=local-verify doping-chatbot-api:local-verify
+docker exec doping-chatbot-api-local-verify id -u
+```
+
+결과:
+
+- Docker build: pass
+- container user id: `999`, non-root pass
+- `GET /health`: `status=ok` pass
+- `GET /ready`: `status=not_ready`, readiness JSON shape pass
+
+`not_ready`의 원인은 검증 컨테이너에 chunk/index/API key를 주입하지 않았기 때문이다. 실제 staging은 `docker-compose.yml`의 volume/env 또는 배포 환경 secret으로 이를 주입한 뒤 `scripts/staging_smoke.py`로 확인한다.
