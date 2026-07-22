@@ -128,6 +128,16 @@ uv run python scripts/staging_smoke.py --base-url http://127.0.0.1:8000
 - pharmacology policy 응답
 - debug endpoint
 
+## 7. Release Quality Gate
+
+현재 index와 graph tool 경로의 핵심 regression을 로컬에서 검사한다.
+
+```bash
+uv run python scripts/release_quality_gate.py
+```
+
+성공 시 `route_match`, `source_hit`, `term_hit`, `retrieval_quality`, `tool_contract` 평균과 각 case 결과가 출력된다. 실패 시 종료 코드 `1`을 반환한다.
+
 ## 7. LangSmith Eval
 
 Retrieval/tool eval:
@@ -210,5 +220,5 @@ uv run pytest
 
 현재 기준:
 
-- full tests: 181 passed, 1 dependency warning
+- full tests: 183 passed, 1 dependency warning
 - ruff: pass

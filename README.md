@@ -216,6 +216,12 @@ Staging smoke:
 
 ```bash
 uv run python scripts/staging_smoke.py --base-url http://127.0.0.1:8000
+
+Release quality gate (data/index가 준비된 staging 또는 release 후보 환경):
+
+```bash
+uv run python scripts/release_quality_gate.py
+```
 ```
 
 LangSmith retrieval/tool eval:
@@ -233,7 +239,7 @@ uv run pytest tests/test_docker_artifacts.py
 최근 로컬 검증 기준:
 
 - `uv run ruff check app tests scripts`: pass
-- `uv run pytest`: 181 passed, 1 dependency warning
+- `uv run pytest`: 183 passed, 1 dependency warning
 - Docker build: pass
 - Docker container non-root: pass, user id `999`
 - Docker `/health`: pass
