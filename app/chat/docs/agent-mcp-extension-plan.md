@@ -236,11 +236,19 @@ Agent 확장은 “LLM에게 마음대로 맡기는 것”이 아니다.
 5. 검증된 기능만 tool화
 6. MCP로 외부 agent 환경에 노출
 
+## 구현 반영 상태
+
+현재 다음 항목은 구현되었다.
+
+- `app/chat/tools/` 디렉토리 생성
+- `RagSearchRequest`, `RagSearchResult`, `RagSearchToolOutput`, `ToolError` schema 정의
+- `rag_search_tool` 구현
+- tool 단위 pytest 작성
+- 실제 Chroma index 기반 smoke 확인
+
 ## 다음 구현 후보
 
-1. `app/chat/tools/` 디렉토리 생성
-2. tool input/output schema 정의
-3. `rag_search_tool`부터 구현
-4. tool 단위 pytest 작성
-5. LangGraph node에서 tool 호출로 교체
-6. LangSmith tool trace 비교
+1. LangGraph retrieve node에서 `rag_search_tool` 호출로 점진 전환
+2. graph state에 tool output을 보존할지, 기존 `RetrievalMatch`로 변환할지 결정
+3. LangSmith tool trace 비교
+4. MCP server exposure 전 input/output schema 안정화
