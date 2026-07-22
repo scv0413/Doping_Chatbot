@@ -295,3 +295,69 @@ search_input.query
 3. MCP server exposure 전 input/output schema 안정화
 4. LangSmith tool eval에 pharmacology tool contract 추가
 5. `field_response_tool` 구현
+
+
+## MCP-compatible Registry 반영 상태
+
+실제 MCP server adapter를 붙이기 전 단계로, 내부 tool을 MCP-compatible schema와 executor registry로 노출했다.
+
+구현 파일:
+
+- `app/chat/tools/mcp_schema.py`
+- `app/chat/tools/mcp_registry.py`
+- `tests/chat/tools/test_mcp_registry.py`
+
+제공 기능:
+
+- `list_mcp_tools()`
+  - `rag_search_tool`, `drug_search_tool`, `pharmacology_info_tool`의 name, description, inputSchema 반환
+- `get_mcp_tool(name)`
+  - 단일 tool definition 반환
+- `execute_mcp_tool(name, arguments, dependencies)`
+  - MCP adapter가 넘겨줄 JSON arguments를 Pydantic request schema로 검증한 뒤 내부 tool 실행
+
+이 구조를 선택한 이유는 다음과 같다.
+
+- MCP server 구현체에 종속되지 않고 tool contract를 먼저 안정화한다.
+- Pydantic schema를 MCP `inputSchema`로 재사용한다.
+- 기존 LangGraph 내부 tool과 외부 MCP 노출 tool이 같은 request/output contract를 공유한다.
+- 테스트에서는 fake dependency를 주입해 네트워크/API key 없이 tool contract를 검증할 수 있다.
+
+## Controlled Agent Tool Plan 반영 상태
+
+자유형 LLM agent 대신, router와 intent 규칙을 기준으로 필요한 tool만 호출하는 deterministic agent tool plan을 추가했다.
+
+구현 파일:
+
+- `app/chat/agent/tool_agent.py`
+- `tests/chat/graph/test_agent_tool_plan.py`
+
+호출 흐름:
+
+```text
+query
+  -> normalize_pipeline_input
+  -> route_question
+  -> if drug route: drug_search_tool
+  -> if pharmacology intent: pharmacology_info_tool
+  -> if retrieval route: rag_search_tool
+  -> AgentToolRunResult(tool call trace)
+```
+
+검증된 예:
+
+| 질문 유형 | route | 호출 tool |
+|---|---|---|
+| 검사관 신분 확인 | `rag` | `rag_search_tool` |
+| 타이레놀 복용 질문 | `drug_search` | `drug_search_tool` |
+| 슈도에페드린 반감기 질문 | `drug_search_with_rag` | `drug_search_tool` -> `pharmacology_info_tool` -> `rag_search_tool` |
+
+이 단계의 핵심은 “agent가 스스로 아무 tool이나 고르는 것”이 아니라, 이미 검증한 router/policy 기준으로 필요한 tool만 호출하고 모든 tool input/output을 trace로 남기는 것이다.
+
+## 다음 MCP 구현 후보
+
+1. 실제 MCP server adapter 추가
+2. `list_tools`에서 `list_mcp_tools()` 반환
+3. `call_tool`에서 `execute_mcp_tool()` 호출
+4. LangSmith tool trace/eval에 MCP adapter 호출 결과 연결
+5. report generation, notification 같은 action tool은 인증/권한 설계 이후 추가
