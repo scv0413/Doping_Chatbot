@@ -92,6 +92,14 @@ uv run python -m app.preprocess.chunker
 
 ```bash
 uv run python -m app.chat.retrieval.indexer
+
+Source 변경 audit 및 안전한 전체 재색인:
+
+```bash
+uv run python scripts/data_refresh.py
+# 검토 완료 후에만:
+uv run python scripts/data_refresh.py --apply
+```
 ```
 
 검색 확인:
@@ -225,7 +233,7 @@ uv run pytest tests/test_docker_artifacts.py
 최근 로컬 검증 기준:
 
 - `uv run ruff check app tests scripts`: pass
-- `uv run pytest`: 173 passed, 1 dependency warning
+- `uv run pytest`: 181 passed, 1 dependency warning
 - Docker build: pass
 - Docker container non-root: pass, user id `999`
 - Docker `/health`: pass
