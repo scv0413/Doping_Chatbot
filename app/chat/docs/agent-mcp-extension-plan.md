@@ -361,3 +361,31 @@ query
 3. `call_tool`에서 `execute_mcp_tool()` 호출
 4. LangSmith tool trace/eval에 MCP adapter 호출 결과 연결
 5. report generation, notification 같은 action tool은 인증/권한 설계 이후 추가
+
+
+## MCP Server Adapter Core 반영 상태
+
+MCP Python SDK 의존성을 바로 추가하지 않고, 먼저 SDK-free adapter core를 구현했다.
+
+구현 파일:
+
+- `app/chat/mcp/server_adapter.py`
+- `tests/chat/tools/test_mcp_server_adapter.py`
+
+제공 기능:
+
+- `list_tools()`
+  - 내부 `list_mcp_tools()` 결과를 MCP list tools response 형태로 감싼다.
+- `call_tool(name, arguments, dependencies)`
+  - 내부 `execute_mcp_tool()`을 호출한다.
+  - 정상 output은 `structuredContent`와 text content에 함께 담는다.
+  - tool runtime error가 있으면 `isError=true`로 표시한다.
+  - validation error나 unknown tool은 `mcp_adapter` stage error로 반환한다.
+
+이 구조를 선택한 이유:
+
+- MCP SDK/transport 버전 변화와 내부 tool contract를 분리한다.
+- 외부 의존성을 추가하지 않고 adapter 동작을 테스트할 수 있다.
+- 다음 단계에서 실제 MCP SDK server는 `list_tools()`와 `call_tool()`만 연결하면 된다.
+
+현재 범위는 MCP protocol transport가 아니라 server adapter core다. 즉 stdio/SSE transport를 실제로 열지는 않는다.
