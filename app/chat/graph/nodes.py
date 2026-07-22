@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.chat.answer.chain import generate_answer
+from app.chat.agent import build_agent_tool_plan
 from app.chat.answer.types import AnswerLLM
 from app.chat.drug_search.kada_client import search_kada_drugs
 from app.chat.drug_search.schemas import DrugSearchInput, build_needs_verification_result
@@ -121,6 +122,15 @@ def build_route_node(dependencies: ChatGraphDependencies) -> Callable[[ChatGraph
         }
 
     return node
+
+
+def build_agent_plan_node(state: ChatGraphState) -> dict[str, Any]:
+    return {
+        "agent_plan": build_agent_tool_plan(
+            state["search_input"],
+            state["decision"],
+        )
+    }
 
 
 def build_drug_search_node(dependencies: ChatGraphDependencies) -> Callable[[ChatGraphState], dict[str, Any]]:

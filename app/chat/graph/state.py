@@ -1,6 +1,7 @@
 from typing import NotRequired, TypedDict
 
 from app.chat.drug_search.schemas import DrugSearchInput, DrugSearchResult
+from app.chat.agent import AgentToolPlan
 from app.chat.pharmacology.schemas import PharmacologyInfoResult
 from app.chat.pipeline.chat_pipeline import PipelineError
 from app.chat.retrieval.schemas import RetrievalMatch
@@ -15,6 +16,7 @@ class ChatGraphState(TypedDict):
 
     search_input: NotRequired[DrugSearchInput]
     decision: NotRequired[RouteDecision]
+    agent_plan: NotRequired[AgentToolPlan]
     drug_result: NotRequired[DrugSearchResult | None]
     drug_search_tool_output: NotRequired[DrugSearchToolOutput | None]
     pharmacology_result: NotRequired[PharmacologyInfoResult | None]

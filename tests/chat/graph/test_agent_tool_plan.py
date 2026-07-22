@@ -85,3 +85,19 @@ def test_agent_tool_plan_calls_drug_pharmacology_and_rag_for_half_life_drug_ques
     assert result.tool_calls[0].output["tool_name"] == "drug_search_tool"
     assert result.tool_calls[1].output["tool_name"] == "pharmacology_info_tool"
     assert result.tool_calls[2].output["tool_name"] == "rag_search_tool"
+
+
+def test_agent_tool_plan_declares_order_before_execution() -> None:
+    from app.chat.agent import build_agent_tool_plan
+    from app.chat.pipeline.chat_pipeline import normalize_pipeline_input
+    from app.chat.router.intent_router import route_question
+
+    search_input = normalize_pipeline_input("슈도에페드린 반감기가 얼마나 돼? 경기 전날 먹었으면 괜찮아?")
+    plan = build_agent_tool_plan(search_input, route_question(search_input.query))
+
+    assert plan.route == "drug_search_with_rag"
+    assert plan.tool_names == [
+        "drug_search_tool",
+        "pharmacology_info_tool",
+        "rag_search_tool",
+    ]

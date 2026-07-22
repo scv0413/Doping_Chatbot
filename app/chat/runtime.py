@@ -54,6 +54,7 @@ class ChatResponse(BaseModel):
     pharmacology_substance: str | None = None
     retrieval_attempts: int = 0
     retrieval_retry_reason: str | None = None
+    planned_tool_names: list[str] = Field(default_factory=list)
     errors: list[dict[str, Any]] = Field(default_factory=list)
 
 
@@ -155,6 +156,7 @@ def build_chat_response(
         pharmacology_substance=result.pharmacology_result.substance_name if result.pharmacology_result else None,
         retrieval_attempts=result.retrieval_attempts,
         retrieval_retry_reason=result.retrieval_retry_reason,
+        planned_tool_names=result.planned_tool_names,
         errors=[error.model_dump() for error in result.errors],
     )
 

@@ -39,7 +39,7 @@ START
 
 ## Guardrails
 
-- `recursion_limit=10`을 기본값으로 둬 infinite loop를 방지한다.
+- `recursion_limit=12`을 기본값으로 둬 infinite loop를 방지한다.
 - 1차 graph는 loop가 없는 DAG 구조로 만든다.
 - `exit` node를 둬 graph가 답변 없이 끝나는 경우를 방어한다.
 - 아직 message trimming이나 summarization node는 넣지 않는다. 현재 graph는 multi-turn message state가 아니라 single query pipeline이기 때문이다.

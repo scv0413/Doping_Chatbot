@@ -271,6 +271,7 @@ def test_public_chat_response_schema_hides_internal_runtime_fields() -> None:
         "policy_matched_rules",
         "retrieval_attempts",
         "retrieval_retry_reason",
+        "planned_tool_names",
     ):
         assert internal_field not in public_properties
         assert internal_field in chat_properties

@@ -103,6 +103,7 @@ def build_graph_tool_target(
             "answer_chars": len(result.answer),
             "retrieval_attempts": result.retrieval_attempts,
             "retrieval_retry_reason": result.retrieval_retry_reason,
+            "planned_tool_names": result.planned_tool_names,
             "errors": [error.model_dump() for error in result.errors],
             "error": "; ".join(error.message for error in result.errors) or None,
         }

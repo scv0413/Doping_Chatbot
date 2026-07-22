@@ -12,8 +12,13 @@ from app.chat.pipeline.chat_pipeline import (
     should_run_retrieval,
 )
 from app.chat.retrieval.query_rewriter import rewrite_query
-from app.chat.router.intent_router import route_question
+from app.chat.router.intent_router import RouteDecision, route_question
 from app.chat.tools.mcp_registry import MCPToolDependencies, execute_mcp_tool
+
+
+class AgentToolPlan(BaseModel):
+    route: str
+    tool_names: list[str] = Field(default_factory=list)
 
 
 class ToolCallRecord(BaseModel):
@@ -25,11 +30,30 @@ class ToolCallRecord(BaseModel):
 class AgentToolRunResult(BaseModel):
     query: str
     route: str
+    plan: AgentToolPlan
     tool_calls: list[ToolCallRecord] = Field(default_factory=list)
 
     @property
     def called_tool_names(self) -> list[str]:
         return [call.tool_name for call in self.tool_calls]
+
+
+def build_agent_tool_plan(search_input, decision: RouteDecision) -> AgentToolPlan:
+    """Declare the bounded tool order before any tool is executed.
+
+    The plan is derived from the deterministic router rather than an LLM, so it
+    remains inspectable, has no arbitrary tool loop, and can be recorded in a
+    LangGraph/LangSmith trace.
+    """
+
+    tool_names: list[str] = []
+    if should_run_drug_search(decision):
+        tool_names.append("drug_search_tool")
+    if should_run_pharmacology_info(search_input.query):
+        tool_names.append("pharmacology_info_tool")
+    if should_run_retrieval(decision):
+        tool_names.append("rag_search_tool")
+    return AgentToolPlan(route=decision.route.value, tool_names=tool_names)
 
 
 def run_agent_tool_plan(
@@ -40,18 +64,19 @@ def run_agent_tool_plan(
 ) -> AgentToolRunResult:
     """Run a controlled multi-tool plan using MCP-compatible tool boundaries.
 
-    This is not a free-form LLM agent. It is the first agentic step: route the
-    question, call only the tools required by that route/intent, and keep every
-    tool input/output traceable.
+    This is not a free-form LLM agent. It routes the question, declares the
+    required tool order, calls only those tools, and keeps every input/output
+    traceable.
     """
 
     dependencies = dependencies or MCPToolDependencies()
     search_input = normalize_pipeline_input(query)
     decision = route_question(search_input.query)
+    plan = build_agent_tool_plan(search_input, decision)
     tool_calls: list[ToolCallRecord] = []
     drug_result: DrugSearchResult | None = None
 
-    if should_run_drug_search(decision):
+    if "drug_search_tool" in plan.tool_names:
         arguments = {
             "query": search_input.query,
             "product_name": search_input.product_name,
@@ -66,12 +91,12 @@ def run_agent_tool_plan(
         if output.get("result"):
             drug_result = DrugSearchResult.model_validate(output["result"])
 
-    if should_run_pharmacology_info(search_input.query):
+    if "pharmacology_info_tool" in plan.tool_names:
         arguments = {"query": search_input.query}
         output = execute_mcp_tool("pharmacology_info_tool", arguments, dependencies=dependencies)
         tool_calls.append(ToolCallRecord(tool_name="pharmacology_info_tool", arguments=arguments, output=output))
 
-    if should_run_retrieval(decision):
+    if "rag_search_tool" in plan.tool_names:
         retrieval_query = build_retrieval_query(
             search_input=search_input,
             decision=decision,
@@ -87,5 +112,6 @@ def run_agent_tool_plan(
     return AgentToolRunResult(
         query=search_input.query,
         route=decision.route.value,
+        plan=plan,
         tool_calls=tool_calls,
     )

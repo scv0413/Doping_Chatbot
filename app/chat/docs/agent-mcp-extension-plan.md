@@ -602,3 +602,13 @@ result = run_chat_graph(
 - API/Gradio 기본값은 내부 registry executor 유지
 - 외부 MCP executor는 실험, 외부 agent 연동, MCP transport 검증용 옵션
 - async API path에서 sync `MCPHTTPToolExecutor`를 직접 쓰지 않도록 running event loop guard 유지
+
+## Controlled Agent Plan in Graph State
+
+The graph now records a deterministic `AgentToolPlan` in a dedicated `plan` node after route classification. This is the explicit bridge between the previously standalone controlled tool planner and the runtime LangGraph execution path.
+
+- plan order is decided before any tool call;
+- `planned_tool_names` is retained in internal runtime/trace output;
+- public API and Gradio do not expose implementation metadata;
+- the bounded one-retry retrieval policy remains unchanged;
+- `DEFAULT_RECURSION_LIMIT` is `12`, which covers the longest valid plan path plus one retry while retaining a hard execution cap.

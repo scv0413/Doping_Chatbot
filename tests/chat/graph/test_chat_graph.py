@@ -283,3 +283,20 @@ def test_graph_nodes_call_mcp_registry_style_tool_executor() -> None:
     ]
     assert state["rag_search_output"].tool_name == "rag_search_tool"
     assert state["retrieval_matches"][0].source_id == "field_response_manual"
+
+
+def test_graph_records_controlled_agent_tool_plan() -> None:
+    result = run_chat_graph(
+        "슈도에페드린 반감기가 얼마나 돼? 경기 전날 먹었으면 괜찮아?",
+        top_k=3,
+        use_llm=False,
+        drug_searcher=fake_drug_searcher,
+        retriever=fake_retriever,
+        query_rewriter=identity_rewriter,
+    )
+
+    assert result.planned_tool_names == [
+        "drug_search_tool",
+        "pharmacology_info_tool",
+        "rag_search_tool",
+    ]

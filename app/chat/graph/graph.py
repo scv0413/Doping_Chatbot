@@ -15,6 +15,7 @@ from app.chat.pipeline.chat_pipeline import (
 from app.chat.graph.nodes import (
     ChatGraphDependencies,
     GraphToolExecutor,
+    build_agent_plan_node,
     build_answer_node,
     build_drug_search_node,
     build_pharmacology_node,
@@ -30,7 +31,7 @@ from app.chat.graph.nodes import (
 )
 from app.chat.graph.state import ChatGraphState
 
-DEFAULT_RECURSION_LIMIT = 10
+DEFAULT_RECURSION_LIMIT = 12
 
 
 def compile_chat_graph(dependencies: ChatGraphDependencies | None = None) -> Any:
@@ -38,6 +39,7 @@ def compile_chat_graph(dependencies: ChatGraphDependencies | None = None) -> Any
 
     builder = StateGraph(ChatGraphState)
     builder.add_node("route", build_route_node(dependencies))
+    builder.add_node("plan", build_agent_plan_node)
     builder.add_node("drug_search", build_drug_search_node(dependencies))
     builder.add_node("pharmacology", build_pharmacology_node(dependencies))
     builder.add_node("rewrite", build_rewrite_node(dependencies))
@@ -47,8 +49,9 @@ def compile_chat_graph(dependencies: ChatGraphDependencies | None = None) -> Any
     builder.add_node("exit", exit_node)
 
     builder.add_edge(START, "route")
+    builder.add_edge("route", "plan")
     builder.add_conditional_edges(
-        "route",
+        "plan",
         next_after_route,
         {"drug_search": "drug_search", "pharmacology": "pharmacology", "rewrite": "rewrite"},
     )
@@ -133,6 +136,7 @@ def state_to_pipeline_result(state: ChatGraphState) -> ChatPipelineResult:
         retrieval_matches=state.get("retrieval_matches", []),
         retrieval_attempts=state.get("retrieval_attempts", 0),
         retrieval_retry_reason=state.get("retrieval_retry_reason"),
+        planned_tool_names=state.get("agent_plan", {}).tool_names if state.get("agent_plan") else [],
         answer=state.get("answer", ""),
         errors=state.get("errors", []),
     )

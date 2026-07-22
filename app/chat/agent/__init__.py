@@ -1,3 +1,15 @@
-from app.chat.agent.tool_agent import AgentToolRunResult, ToolCallRecord, run_agent_tool_plan
+from app.chat.agent.tool_agent import (
+    AgentToolPlan,
+    AgentToolRunResult,
+    ToolCallRecord,
+    build_agent_tool_plan,
+    run_agent_tool_plan,
+)
 
-__all__ = ["AgentToolRunResult", "ToolCallRecord", "run_agent_tool_plan"]
+__all__ = [
+    "AgentToolPlan",
+    "AgentToolRunResult",
+    "ToolCallRecord",
+    "build_agent_tool_plan",
+    "run_agent_tool_plan",
+]

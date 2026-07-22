@@ -32,7 +32,7 @@ app/
     router/               # 질문 intent route 결정
     answer/               # deterministic formatter + LangChain ChatOpenAI answer chain
     policy/               # 6 rules, safety caveat, runtime policy
-    graph/                # LangGraph 실행 흐름
+    graph/                # LangGraph 실행 흐름과 deterministic tool plan
     tools/                # rag/drug/pharmacology tool request/output contract
     runtime.py            # Gradio/FastAPI 공통 entrypoint
     api/                  # FastAPI, readiness, error response, JSON logging
@@ -239,7 +239,7 @@ uv run pytest tests/test_docker_artifacts.py
 최근 로컬 검증 기준:
 
 - `uv run ruff check app tests scripts`: pass
-- `uv run pytest`: 183 passed, 1 dependency warning
+- `uv run pytest`: 186 passed, 1 dependency warning
 - Docker build: pass
 - Docker container non-root: pass, user id `999`
 - Docker `/health`: pass

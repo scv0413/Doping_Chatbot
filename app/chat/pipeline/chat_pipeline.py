@@ -63,6 +63,7 @@ class ChatPipelineResult(BaseModel):
     retrieval_matches: list[RetrievalMatch] = Field(default_factory=list)
     retrieval_attempts: int = 0
     retrieval_retry_reason: str | None = None
+    planned_tool_names: list[str] = Field(default_factory=list)
     answer: str
     errors: list[PipelineError] = Field(default_factory=list)
 

@@ -65,6 +65,11 @@ def test_run_chat_applies_runtime_policy_when_options_are_omitted() -> None:
     assert response.top_k == 3
     assert response.use_llm is False
     assert "half_life_safety_baseline_formatter" in response.policy_matched_rules
+    assert response.planned_tool_names == [
+        "drug_search_tool",
+        "pharmacology_info_tool",
+        "rag_search_tool",
+    ]
 
 
 def test_run_chat_can_use_pipeline_engine() -> None:

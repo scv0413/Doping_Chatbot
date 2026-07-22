@@ -220,5 +220,5 @@ uv run pytest
 
 현재 기준:
 
-- full tests: 183 passed, 1 dependency warning
+- full tests: 186 passed, 1 dependency warning
 - ruff: pass
