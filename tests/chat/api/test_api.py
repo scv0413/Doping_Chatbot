@@ -15,10 +15,10 @@ def fake_chat_service(request: ChatRequest) -> ChatResponse:
     )
 
 
-def build_test_client() -> TestClient:
+def build_test_client(chat_service=fake_chat_service) -> TestClient:
     app = create_app()
-    app.dependency_overrides[get_chat_service] = lambda: fake_chat_service
-    return TestClient(app)
+    app.dependency_overrides[get_chat_service] = lambda: chat_service
+    return TestClient(app, raise_server_exceptions=False)
 
 
 def test_health_endpoint() -> None:
@@ -72,7 +72,7 @@ def test_create_chat_response_endpoint() -> None:
     assert body["retrieval_attempts"] == 1
 
 
-def test_create_chat_response_validates_request_body() -> None:
+def test_create_chat_response_returns_standard_validation_error() -> None:
     client = build_test_client()
 
     response = client.post(
@@ -81,3 +81,41 @@ def test_create_chat_response_validates_request_body() -> None:
     )
 
     assert response.status_code == 422
+    body = response.json()
+    assert body["error"]["code"] == "validation_error"
+    assert body["error"]["message"] == "요청 형식이 올바르지 않습니다."
+    assert body["error"]["details"]
+
+
+def test_unknown_route_returns_standard_http_error() -> None:
+    client = build_test_client()
+
+    response = client.get("/missing")
+
+    assert response.status_code == 404
+    body = response.json()
+    assert body["error"]["code"] == "http_error"
+    assert body["error"]["message"] == "Not Found"
+
+
+def test_unhandled_exception_returns_standard_internal_error() -> None:
+    def broken_chat_service(request: ChatRequest) -> ChatResponse:
+        raise RuntimeError("temporary failure")
+
+    client = build_test_client(chat_service=broken_chat_service)
+
+    response = client.post(
+        "/api/v1/chat-responses",
+        json={
+            "query": "도핑 검사관 신분이 불분명하면 어떻게 해?",
+            "top_k": 3,
+            "use_llm": False,
+            "engine": "graph",
+        },
+    )
+
+    assert response.status_code == 500
+    body = response.json()
+    assert body["error"]["code"] == "internal_server_error"
+    assert body["error"]["message"] == "서버 처리 중 오류가 발생했습니다."
+    assert body["error"]["details"] == []
