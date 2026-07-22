@@ -389,3 +389,42 @@ MCP Python SDK 의존성을 바로 추가하지 않고, 먼저 SDK-free adapter 
 - 다음 단계에서 실제 MCP SDK server는 `list_tools()`와 `call_tool()`만 연결하면 된다.
 
 현재 범위는 MCP protocol transport가 아니라 server adapter core다. 즉 stdio/SSE transport를 실제로 열지는 않는다.
+
+
+## FastMCP Server 반영 상태
+
+공식 MCP Python SDK v1.x의 `FastMCP`를 사용해 실제 MCP server entrypoint를 추가했다.
+
+구현 파일:
+
+- `app/chat/mcp/fastmcp_server.py`
+- `tests/chat/tools/test_fastmcp_server.py`
+
+구성:
+
+- server name: `doping-chatbot-mcp`
+- transport: `streamable-http`
+- path: `/mcp`
+- local port: `8012`
+- FastAPI 기본 포트 `8000`과 충돌하지 않도록 MCP 서버 포트를 분리
+- `stateless_http=True`
+- `json_response=True`
+
+실행:
+
+```bash
+uv run python -m app.chat.mcp.fastmcp_server
+```
+
+노출 tool:
+
+- `rag_search_tool`
+- `drug_search_tool`
+- `pharmacology_info_tool`
+
+검증 중 발견한 오류:
+
+- `FastMCP.list_tools()`는 시그니처상 일반 메서드처럼 보였지만 실제로 coroutine을 반환했다.
+- 테스트를 `asyncio.run(server.list_tools())`로 수정했다.
+
+이 단계부터는 실제 MCP client/inspector가 연결할 수 있는 server entrypoint가 생겼다.

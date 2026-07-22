@@ -152,7 +152,29 @@ uv run python -m app.chat.evals.langsmith_tool_eval --top-k 3 --skip-dataset-upl
 
 특히 `drug_half_life` 케이스에서 route는 `rag`여도 `pharmacology_tool_name=pharmacology_info_tool`이 보여야 한다.
 
-## 8. 최종 검증
+## 8. MCP Server 시연
+
+FastMCP server 실행:
+
+```bash
+uv run python -m app.chat.mcp.fastmcp_server
+```
+
+기본 연결 URL:
+
+```text
+http://127.0.0.1:8012/mcp
+```
+
+MCP Inspector를 사용할 경우 별도 터미널에서 inspector를 실행하고 위 URL로 연결한다.
+
+노출 tool:
+
+- `rag_search_tool`
+- `drug_search_tool`
+- `pharmacology_info_tool`
+
+## 9. 최종 검증
 
 ```bash
 uv run ruff check app tests scripts

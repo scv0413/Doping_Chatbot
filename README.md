@@ -139,6 +139,26 @@ curl -X POST http://127.0.0.1:8000/api/v1/debug/chat-responses \
   -d '{"query":"S0 비승인약물이 뭐야?","top_k":3,"use_llm":false,"engine":"graph"}'
 ```
 
+## MCP Server
+
+FastMCP 기반 MCP server entrypoint를 제공합니다. 기본 transport는 streamable HTTP이며 MCP endpoint는 `/mcp`입니다. FastAPI 기본 포트와 충돌하지 않도록 로컬 기본 포트는 `8012`를 사용합니다.
+
+```bash
+uv run python -m app.chat.mcp.fastmcp_server
+```
+
+MCP Inspector 또는 MCP client에서 다음 URL로 연결합니다.
+
+```text
+http://127.0.0.1:8012/mcp
+```
+
+노출 tool:
+
+- `rag_search_tool`
+- `drug_search_tool`
+- `pharmacology_info_tool`
+
 ## Docker
 
 Build:
