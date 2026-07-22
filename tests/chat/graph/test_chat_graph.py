@@ -237,3 +237,49 @@ def test_graph_stops_after_one_retry_when_results_stay_empty() -> None:
     assert result.retrieval_retry_reason == "empty_results"
     assert result.errors == []
     assert "공식 문서와 manual source" in result.answer
+
+
+def test_graph_nodes_call_mcp_registry_style_tool_executor() -> None:
+    calls: list[tuple[str, dict]] = []
+
+    def executor(name, arguments, dependencies):
+        calls.append((name, arguments))
+        assert dependencies is not None
+        if name == "rag_search_tool":
+            from app.chat.tools.rag_search_tool import run_rag_search_tool
+            from app.chat.tools.schemas import RagSearchRequest
+
+            return run_rag_search_tool(
+                RagSearchRequest.model_validate(arguments),
+                retriever=dependencies.rag_retriever,
+            ).model_dump(mode="json")
+        raise AssertionError(f"unexpected tool: {name}")
+
+    dependencies = ChatGraphDependencies(
+        retriever=fake_retriever,
+        query_rewriter=identity_rewriter,
+        tool_executor=executor,
+    )
+    state = {
+        "query": "도핑 검사관 신분이 불분명하면 어떻게 확인해야 해?",
+        "top_k": 3,
+        "use_llm": False,
+        "errors": [],
+    }
+
+    state.update(build_route_node(dependencies)(state))
+    state.update(build_rewrite_node(dependencies)(state))
+    state.update(build_retrieve_node(dependencies)(state))
+
+    assert calls == [
+        (
+            "rag_search_tool",
+            {
+                "query": "도핑 검사관 신분이 불분명하면 어떻게 확인해야 해?",
+                "top_k": 3,
+                "request_id": None,
+            },
+        )
+    ]
+    assert state["rag_search_output"].tool_name == "rag_search_tool"
+    assert state["retrieval_matches"][0].source_id == "field_response_manual"

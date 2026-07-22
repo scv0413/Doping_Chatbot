@@ -477,3 +477,41 @@ uv run python -m app.chat.evals.langsmith_mcp_eval --top-k 3 --skip-dataset-uplo
 의미:
 
 Graph 내부 tool contract 평가에서 한 단계 더 나아가, 실제 MCP transport를 경유해도 tool 호출 계약과 retrieval 품질 평가가 유지되는지 확인할 수 있게 됐다.
+
+
+## LangGraph Node Tool Executor 전환
+
+LangGraph node가 개별 tool wrapper를 직접 호출하던 구조에서 MCP registry style executor를 경유하는 구조로 전환했다.
+
+변경 전:
+
+- `build_drug_search_node` -> `run_drug_search_tool()` 직접 호출
+- `build_pharmacology_node` -> `run_pharmacology_info_tool()` 직접 호출
+- `build_retrieve_node` -> `run_rag_search_tool()` 직접 호출
+
+변경 후:
+
+- graph node -> `run_graph_tool()` -> `ChatGraphDependencies.tool_executor()` -> `execute_mcp_tool()`
+- tool 이름과 JSON arguments 기반으로 실행
+- 출력은 다시 `DrugSearchToolOutput`, `PharmacologyInfoToolOutput`, `RagSearchToolOutput`으로 validate
+
+이 구조의 의미:
+
+- graph node는 개별 서비스 구현보다 tool contract에 의존한다.
+- 내부 registry executor와 외부 MCP executor를 같은 contract로 비교하거나 교체할 수 있다.
+- 기존 `run_chat_graph()` public API와 사용자 결과는 유지된다.
+- retry, answer, state 변환 구조는 그대로 보존했다.
+
+검증:
+
+```bash
+uv run pytest tests/chat/graph
+uv run pytest
+```
+
+결과:
+
+- graph 테스트: 13 passed
+- 전체 테스트: 164 passed
+
+이 단계는 완전한 외부 MCP graph가 아니라 1차 점진 전환이다. 실제 운영에서 모든 graph node가 HTTP MCP server를 호출하도록 바꾸는 것은 latency, failure handling, timeout, retry 정책을 추가로 확정한 뒤 진행한다.

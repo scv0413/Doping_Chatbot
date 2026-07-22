@@ -24,16 +24,24 @@ from app.chat.pipeline.chat_pipeline import (
 from app.chat.retrieval.query_rewriter import rewrite_query
 from app.chat.retrieval.retriever import search
 from app.chat.router.intent_router import route_question
-from app.chat.tools.drug_search_tool import run_drug_search_tool
-from app.chat.tools.pharmacology_info_tool import run_pharmacology_info_tool
-from app.chat.tools.rag_search_tool import run_rag_search_tool, tool_output_to_retrieval_matches
-from app.chat.tools.schemas import DrugSearchToolRequest, PharmacologyInfoToolRequest, RagSearchRequest, ToolError
+from app.chat.tools.mcp_registry import MCPToolDependencies, execute_mcp_tool
+from app.chat.tools.rag_search_tool import tool_output_to_retrieval_matches
+from app.chat.tools.schemas import (
+    DrugSearchToolOutput,
+    DrugSearchToolRequest,
+    PharmacologyInfoToolOutput,
+    PharmacologyInfoToolRequest,
+    RagSearchRequest,
+    RagSearchToolOutput,
+    ToolError,
+)
 from app.chat.graph.state import ChatGraphState
 
 DEFAULT_TOP_K = 3
 MAX_RETRIEVAL_ATTEMPTS = 2
 MIN_RETRIEVAL_CONTEXT_CHARS = 80
 MAX_ACCEPTABLE_BEST_DISTANCE = 0.85
+GraphToolExecutor = Callable[[str, dict[str, Any], MCPToolDependencies | None], dict[str, Any]]
 
 
 @dataclass(frozen=True)
@@ -43,7 +51,15 @@ class ChatGraphDependencies:
     retriever: Retriever = search
     query_rewriter: QueryRewriter = rewrite_query
     pharmacology_searcher: PharmacologySearcher = search_pharmacology_info
+    tool_executor: GraphToolExecutor = execute_mcp_tool
     llm: AnswerLLM | None = None
+
+    def mcp_tool_dependencies(self) -> MCPToolDependencies:
+        return MCPToolDependencies(
+            rag_retriever=self.retriever,
+            drug_searcher=self.drug_searcher,
+            pharmacology_searcher=self.pharmacology_searcher,
+        )
 
 
 def state_errors(state: ChatGraphState) -> list[PipelineError]:
@@ -82,6 +98,18 @@ def build_rag_search_request(state: ChatGraphState, top_k: int) -> RagSearchRequ
     )
 
 
+def run_graph_tool(
+    dependencies: ChatGraphDependencies,
+    name: str,
+    arguments: dict[str, Any],
+) -> dict[str, Any]:
+    return dependencies.tool_executor(
+        name,
+        arguments,
+        dependencies.mcp_tool_dependencies(),
+    )
+
+
 def build_route_node(dependencies: ChatGraphDependencies) -> Callable[[ChatGraphState], dict[str, Any]]:
     def node(state: ChatGraphState) -> dict[str, Any]:
         search_input = normalize_pipeline_input(state["query"])
@@ -99,9 +127,12 @@ def build_drug_search_node(dependencies: ChatGraphDependencies) -> Callable[[Cha
     def node(state: ChatGraphState) -> dict[str, Any]:
         errors = state_errors(state)
         search_input = state["search_input"]
-        drug_search_tool_output = run_drug_search_tool(
-            build_drug_search_tool_request(search_input),
-            drug_searcher=dependencies.drug_searcher,
+        drug_search_tool_output = DrugSearchToolOutput.model_validate(
+            run_graph_tool(
+                dependencies=dependencies,
+                name="drug_search_tool",
+                arguments=build_drug_search_tool_request(search_input).model_dump(mode="json"),
+            )
         )
         append_tool_errors(errors, drug_search_tool_output.errors, stage="drug_search")
         drug_result = drug_search_tool_output.result or build_needs_verification_result(
@@ -121,9 +152,12 @@ def build_pharmacology_node(dependencies: ChatGraphDependencies) -> Callable[[Ch
     def node(state: ChatGraphState) -> dict[str, Any]:
         errors = state_errors(state)
         search_input = state["search_input"]
-        pharmacology_info_tool_output = run_pharmacology_info_tool(
-            build_pharmacology_tool_request(search_input),
-            pharmacology_searcher=dependencies.pharmacology_searcher,
+        pharmacology_info_tool_output = PharmacologyInfoToolOutput.model_validate(
+            run_graph_tool(
+                dependencies=dependencies,
+                name="pharmacology_info_tool",
+                arguments=build_pharmacology_tool_request(search_input).model_dump(mode="json"),
+            )
         )
         append_tool_errors(
             errors,
@@ -165,9 +199,12 @@ def build_retrieve_node(dependencies: ChatGraphDependencies) -> Callable[[ChatGr
     def node(state: ChatGraphState) -> dict[str, Any]:
         errors = state_errors(state)
         top_k = int(state.get("top_k", DEFAULT_TOP_K))
-        rag_search_output = run_rag_search_tool(
-            build_rag_search_request(state, top_k),
-            retriever=dependencies.retriever,
+        rag_search_output = RagSearchToolOutput.model_validate(
+            run_graph_tool(
+                dependencies=dependencies,
+                name="rag_search_tool",
+                arguments=build_rag_search_request(state, top_k).model_dump(mode="json"),
+            )
         )
         append_tool_errors(errors, rag_search_output.errors, stage="retrieval")
         retrieval_matches = tool_output_to_retrieval_matches(rag_search_output)
