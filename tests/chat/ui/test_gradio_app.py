@@ -4,13 +4,15 @@ from app.chat.ui.gradio_app import build_demo, format_citations, format_metadata
 
 def fake_runner(request: ChatRequest) -> ChatResponse:
     assert request.query == "S0 비승인약물이 뭐야?"
-    assert request.top_k == 3
-    assert request.engine is ChatEngine.GRAPH
+    assert request.top_k in {None, 3}
+    assert request.engine in {None, ChatEngine.GRAPH}
     return ChatResponse(
         answer="S0은 비승인 약물입니다.",
         route="rag",
         query=request.query,
-        engine=request.engine,
+        engine=request.engine or ChatEngine.GRAPH,
+        top_k=request.top_k or 3,
+        use_llm=request.use_llm if request.use_llm is not None else False,
         citations=[
             CitationSummary(
                 chunk_id="wada_prohibited_list_2026_ko:p5:c0",
@@ -37,6 +39,14 @@ def test_respond_returns_answer_citations_and_metadata() -> None:
     assert "wada_prohibited_list_2026_ko:p5:c0" in citations
     assert "route" in metadata
     assert "retrieval_attempts" in metadata
+
+
+def test_respond_can_use_runtime_policy_defaults() -> None:
+    answer, citations, metadata = respond(" S0 비승인약물이 뭐야? ", runner=fake_runner)
+
+    assert "S0" in answer
+    assert "wada_prohibited_list_2026_ko:p5:c0" in citations
+    assert "route" in metadata
 
 
 def test_respond_handles_empty_query() -> None:

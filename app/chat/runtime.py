@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 from app.chat.answer.types import AnswerLLM
 from app.chat.drug_search.schemas import DrugSearchInput
-from app.chat.graph.graph import DEFAULT_RECURSION_LIMIT, run_chat_graph
+from app.chat.graph.graph import run_chat_graph
 from app.chat.pipeline.chat_pipeline import (
     ChatPipelineResult,
     DrugSearcher,
@@ -15,6 +15,7 @@ from app.chat.pipeline.chat_pipeline import (
     Retriever,
     run_chat_pipeline,
 )
+from app.chat.policy.runtime_policy import RuntimePolicyDecision, RuntimeEngine, decide_runtime_policy
 
 
 class ChatEngine(StrEnum):
@@ -24,10 +25,10 @@ class ChatEngine(StrEnum):
 
 class ChatRequest(BaseModel):
     query: str = Field(min_length=1)
-    top_k: int = Field(default=3, ge=1, le=10)
-    use_llm: bool = True
-    engine: ChatEngine = ChatEngine.GRAPH
-    recursion_limit: int = Field(default=DEFAULT_RECURSION_LIMIT, ge=1, le=50)
+    top_k: int | None = Field(default=None, ge=1, le=10)
+    use_llm: bool | None = None
+    engine: ChatEngine | None = None
+    recursion_limit: int | None = Field(default=None, ge=1, le=50)
 
 
 class CitationSummary(BaseModel):
@@ -43,6 +44,10 @@ class ChatResponse(BaseModel):
     route: str
     query: str
     engine: ChatEngine
+    top_k: int = 3
+    use_llm: bool = False
+    policy_reason: str | None = None
+    policy_matched_rules: list[str] = Field(default_factory=list)
     citations: list[CitationSummary] = Field(default_factory=list)
     drug_status: str | None = None
     pharmacology_status: str | None = None
@@ -68,28 +73,30 @@ def run_chat(
     dependencies: ChatRuntimeDependencies | None = None,
 ) -> ChatResponse:
     resolved_request = normalize_chat_request(request)
+    runtime_policy = resolve_runtime_policy(resolved_request)
     dependencies = dependencies or ChatRuntimeDependencies()
 
     runner_kwargs = build_runner_kwargs(dependencies)
-    if resolved_request.engine is ChatEngine.GRAPH:
+    if runtime_policy.engine is RuntimeEngine.GRAPH:
         result = run_chat_graph(
             resolved_request.query,
-            top_k=resolved_request.top_k,
-            use_llm=resolved_request.use_llm,
-            recursion_limit=resolved_request.recursion_limit,
+            top_k=runtime_policy.top_k,
+            use_llm=runtime_policy.use_llm,
+            recursion_limit=runtime_policy.recursion_limit,
             **runner_kwargs,
         )
     else:
         result = run_chat_pipeline(
             resolved_request.query,
-            top_k=resolved_request.top_k,
-            use_llm=resolved_request.use_llm,
+            top_k=runtime_policy.top_k,
+            use_llm=runtime_policy.use_llm,
             **runner_kwargs,
         )
 
     return build_chat_response(
         result=result,
-        engine=resolved_request.engine,
+        engine=ChatEngine(runtime_policy.engine.value),
+        runtime_policy=runtime_policy,
     )
 
 
@@ -118,12 +125,30 @@ def normalize_chat_request(request: ChatRequest | DrugSearchInput | str) -> Chat
     return ChatRequest(query=request)
 
 
-def build_chat_response(result: ChatPipelineResult, engine: ChatEngine) -> ChatResponse:
+def resolve_runtime_policy(request: ChatRequest) -> RuntimePolicyDecision:
+    return decide_runtime_policy(
+        query=request.query,
+        top_k=request.top_k,
+        use_llm=request.use_llm,
+        engine=RuntimeEngine(request.engine.value) if request.engine else None,
+        recursion_limit=request.recursion_limit,
+    )
+
+
+def build_chat_response(
+    result: ChatPipelineResult,
+    engine: ChatEngine,
+    runtime_policy: RuntimePolicyDecision,
+) -> ChatResponse:
     return ChatResponse(
         answer=result.answer,
         route=result.decision.route.value,
         query=result.search_input.query,
         engine=engine,
+        top_k=runtime_policy.top_k,
+        use_llm=runtime_policy.use_llm,
+        policy_reason=runtime_policy.reason,
+        policy_matched_rules=runtime_policy.matched_rules,
         citations=[build_citation_summary(match) for match in result.retrieval_matches],
         drug_status=result.drug_result.status.value if result.drug_result else None,
         pharmacology_status=result.pharmacology_result.status.value if result.pharmacology_result else None,

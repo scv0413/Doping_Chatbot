@@ -14,7 +14,9 @@ def fake_chat_service(request: ChatRequest) -> ChatResponse:
         answer=f"stub answer: {request.query}",
         route="rag",
         query=request.query,
-        engine=request.engine,
+        engine=request.engine or ChatEngine.GRAPH,
+        top_k=request.top_k or 3,
+        use_llm=request.use_llm if request.use_llm is not None else False,
         retrieval_attempts=1,
     )
 
@@ -75,6 +77,21 @@ def test_create_chat_response_endpoint() -> None:
     assert body["route"] == "rag"
     assert body["engine"] == ChatEngine.GRAPH
     assert body["retrieval_attempts"] == 1
+
+
+def test_create_chat_response_accepts_policy_defaults() -> None:
+    client = build_test_client()
+
+    response = client.post(
+        "/api/v1/chat-responses",
+        json={"query": "슈도에페드린 반감기가 얼마나 돼?"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["engine"] == ChatEngine.GRAPH
+    assert body["top_k"] == 3
+    assert body["use_llm"] is False
 
 
 def test_create_chat_response_returns_standard_validation_error() -> None:

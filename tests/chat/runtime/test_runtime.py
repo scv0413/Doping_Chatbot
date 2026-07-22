@@ -52,6 +52,21 @@ def test_run_chat_uses_graph_engine_by_default() -> None:
     assert "확인" in response.answer
 
 
+def test_run_chat_applies_runtime_policy_when_options_are_omitted() -> None:
+    response = run_chat(
+        ChatRequest(query="슈도에페드린 반감기가 얼마나 돼? 경기 전날 먹었으면 괜찮아?"),
+        dependencies=ChatRuntimeDependencies(
+            retriever=fake_retriever,
+            query_rewriter=identity_rewriter,
+        ),
+    )
+
+    assert response.engine is ChatEngine.GRAPH
+    assert response.top_k == 3
+    assert response.use_llm is False
+    assert "half_life_safety_baseline_formatter" in response.policy_matched_rules
+
+
 def test_run_chat_can_use_pipeline_engine() -> None:
     response = run_chat(
         ChatRequest(

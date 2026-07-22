@@ -30,10 +30,10 @@ def format_citations(response: ChatResponse) -> str:
 def format_metadata(response: ChatResponse) -> str:
     lines = [
         f"- route: `{response.route}`",
-        f"- engine: `{response.engine.value}`",
         f"- retrieval_attempts: `{response.retrieval_attempts}`",
         f"- retry_reason: `{response.retrieval_retry_reason or '없음'}`",
         f"- drug_status: `{response.drug_status or '없음'}`",
+        f"- pharmacology_status: `{response.pharmacology_status or '없음'}`",
         f"- errors: `{len(response.errors)}`",
     ]
     if response.errors:
@@ -44,9 +44,9 @@ def format_metadata(response: ChatResponse) -> str:
 
 def respond(
     query: str,
-    top_k: int,
-    use_llm: bool,
-    engine: str,
+    top_k: int | None = None,
+    use_llm: bool | None = None,
+    engine: str | None = None,
     runner: ChatRunner = run_chat,
 ) -> tuple[str, str, str]:
     if not query.strip():
@@ -55,9 +55,9 @@ def respond(
     response = runner(
         ChatRequest(
             query=query.strip(),
-            top_k=int(top_k),
+            top_k=int(top_k) if top_k is not None else None,
             use_llm=use_llm,
-            engine=ChatEngine(engine),
+            engine=ChatEngine(engine) if engine else None,
         )
     )
     return response.answer, format_citations(response), format_metadata(response)
@@ -68,21 +68,11 @@ def build_demo(runner: ChatRunner = run_chat) -> gr.Blocks:
         gr.Markdown(f"# {DEFAULT_TITLE}")
         gr.Markdown(DEFAULT_DESCRIPTION)
 
-        with gr.Row():
-            query = gr.Textbox(
-                label="질문",
-                placeholder="예: 경기기간 중 코감기약을 비강 스프레이로 써도 돼?",
-                lines=4,
-                scale=4,
-            )
-            with gr.Column(scale=1):
-                top_k = gr.Slider(label="검색 문서 수", minimum=1, maximum=10, value=3, step=1)
-                use_llm = gr.Checkbox(label="LLM 답변 사용", value=False)
-                engine = gr.Radio(
-                    label="실행 엔진",
-                    choices=[engine.value for engine in ChatEngine],
-                    value=ChatEngine.GRAPH.value,
-                )
+        query = gr.Textbox(
+            label="질문",
+            placeholder="예: 경기기간 중 코감기약을 비강 스프레이로 써도 돼?",
+            lines=4,
+        )
 
         submit = gr.Button("답변 생성", variant="primary")
 
@@ -91,26 +81,14 @@ def build_demo(runner: ChatRunner = run_chat) -> gr.Blocks:
         metadata = gr.Markdown(label="실행 정보")
 
         submit.click(
-            fn=lambda user_query, selected_top_k, selected_use_llm, selected_engine: respond(
-                user_query,
-                selected_top_k,
-                selected_use_llm,
-                selected_engine,
-                runner=runner,
-            ),
-            inputs=[query, top_k, use_llm, engine],
+            fn=lambda user_query: respond(user_query, runner=runner),
+            inputs=[query],
             outputs=[answer, citations, metadata],
         )
 
         query.submit(
-            fn=lambda user_query, selected_top_k, selected_use_llm, selected_engine: respond(
-                user_query,
-                selected_top_k,
-                selected_use_llm,
-                selected_engine,
-                runner=runner,
-            ),
-            inputs=[query, top_k, use_llm, engine],
+            fn=lambda user_query: respond(user_query, runner=runner),
+            inputs=[query],
             outputs=[answer, citations, metadata],
         )
 
