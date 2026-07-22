@@ -254,7 +254,7 @@ Agent 확장은 “LLM에게 마음대로 맡기는 것”이 아니다.
 
 ## LangGraph 전환 반영 상태
 
-현재 LangGraph retrieve node는 내부적으로 `rag_search_tool`을 호출한다. 또한 drug search node는 내부적으로 `drug_search_tool`을 호출한다.
+현재 LangGraph retrieve node는 내부적으로 `rag_search_tool`을 호출한다. 또한 drug search node는 내부적으로 `drug_search_tool`을 호출하고, pharmacology node는 `pharmacology_info_tool`을 호출한다.
 
 구조는 다음과 같다.
 
@@ -272,13 +272,20 @@ search_input
   -> DrugSearchToolOutput
   -> DrugSearchResult
   -> answer layer
+
+search_input.query
+  -> PharmacologyInfoToolRequest
+  -> pharmacology_info_tool
+  -> PharmacologyInfoToolOutput
+  -> PharmacologyInfoResult
+  -> answer layer
 ```
 
 이 구조를 선택한 이유는 다음과 같다.
 
 - graph 내부에 tool boundary를 도입한다.
 - 기존 answer layer가 기대하는 `RetrievalMatch` 구조는 유지한다.
-- state에 `rag_search_output`과 `drug_search_tool_output`을 남겨 이후 LangSmith tool trace/eval에 활용할 수 있다.
+- state에 `rag_search_output`, `drug_search_tool_output`, `pharmacology_info_tool_output`을 남겨 이후 LangSmith tool trace/eval에 활용할 수 있다.
 - 외부 동작은 유지하면서 MCP 확장 준비를 진행한다.
 
 ## 다음 구현 후보
@@ -286,6 +293,5 @@ search_input
 1. LangSmith tool trace 비교
 2. `rag_search_output`와 `drug_search_tool_output` 기반 tool eval 확장
 3. MCP server exposure 전 input/output schema 안정화
-4. LangGraph pharmacology node에서 `pharmacology_info_tool` 호출로 점진 전환
-5. LangSmith tool eval에 pharmacology tool contract 추가
-6. `field_response_tool` 구현
+4. LangSmith tool eval에 pharmacology tool contract 추가
+5. `field_response_tool` 구현

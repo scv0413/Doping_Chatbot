@@ -16,7 +16,6 @@ from app.chat.pipeline.chat_pipeline import (
     build_pipeline_error,
     build_retrieval_query,
     normalize_pipeline_input,
-    run_pharmacology_step,
     run_query_rewrite_step,
     should_run_drug_search,
     should_run_retrieval,
@@ -25,8 +24,9 @@ from app.chat.retrieval.query_rewriter import rewrite_query
 from app.chat.retrieval.retriever import search
 from app.chat.router.intent_router import route_question
 from app.chat.tools.drug_search_tool import run_drug_search_tool
+from app.chat.tools.pharmacology_info_tool import run_pharmacology_info_tool
 from app.chat.tools.rag_search_tool import run_rag_search_tool, tool_output_to_retrieval_matches
-from app.chat.tools.schemas import DrugSearchToolRequest, RagSearchRequest, ToolError
+from app.chat.tools.schemas import DrugSearchToolRequest, PharmacologyInfoToolRequest, RagSearchRequest, ToolError
 from app.chat.graph.state import ChatGraphState
 
 DEFAULT_TOP_K = 3
@@ -92,12 +92,21 @@ def build_pharmacology_node(dependencies: ChatGraphDependencies) -> Callable[[Ch
     def node(state: ChatGraphState) -> dict[str, Any]:
         errors = list(state.get("errors", []))
         search_input = state["search_input"]
-        pharmacology_result = run_pharmacology_step(
-            query=search_input.query,
+        pharmacology_info_tool_output = run_pharmacology_info_tool(
+            PharmacologyInfoToolRequest(query=search_input.query),
             pharmacology_searcher=dependencies.pharmacology_searcher,
-            errors=errors,
         )
-        return {"pharmacology_result": pharmacology_result, "errors": errors}
+        errors.extend(
+            tool_errors_to_pipeline_errors(
+                pharmacology_info_tool_output.errors,
+                stage="pharmacology_info",
+            )
+        )
+        return {
+            "pharmacology_result": pharmacology_info_tool_output.result,
+            "pharmacology_info_tool_output": pharmacology_info_tool_output,
+            "errors": errors,
+        }
 
     return node
 
