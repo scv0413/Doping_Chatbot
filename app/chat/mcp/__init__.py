@@ -13,3 +13,7 @@ __all__ = [
     "call_tool",
     "list_tools",
 ]
+
+from app.chat.mcp.client_executor import MCPHTTPToolExecutor
+
+__all__ = ["MCPHTTPToolExecutor"]

@@ -14,6 +14,7 @@ from app.chat.pipeline.chat_pipeline import (
 )
 from app.chat.graph.nodes import (
     ChatGraphDependencies,
+    GraphToolExecutor,
     build_answer_node,
     build_drug_search_node,
     build_pharmacology_node,
@@ -83,6 +84,7 @@ def run_chat_graph(
     retriever: Retriever | None = None,
     query_rewriter: QueryRewriter | None = None,
     pharmacology_searcher: PharmacologySearcher | None = None,
+    tool_executor: GraphToolExecutor | None = None,
     recursion_limit: int = DEFAULT_RECURSION_LIMIT,
 ) -> ChatPipelineResult:
     query = search_input.query if isinstance(search_input, DrugSearchInput) else search_input
@@ -106,6 +108,8 @@ def run_chat_graph(
         dependency_kwargs["query_rewriter"] = query_rewriter
     if pharmacology_searcher is not None:
         dependency_kwargs["pharmacology_searcher"] = pharmacology_searcher
+    if tool_executor is not None:
+        dependency_kwargs["tool_executor"] = tool_executor
 
     graph = compile_chat_graph(ChatGraphDependencies(**dependency_kwargs))
     final_state = cast(

@@ -515,3 +515,44 @@ uv run pytest
 - 전체 테스트: 164 passed
 
 이 단계는 완전한 외부 MCP graph가 아니라 1차 점진 전환이다. 실제 운영에서 모든 graph node가 HTTP MCP server를 호출하도록 바꾸는 것은 latency, failure handling, timeout, retry 정책을 추가로 확정한 뒤 진행한다.
+
+
+## MCP HTTP Tool Executor 옵션
+
+Graph 기본 실행은 내부 registry executor를 유지하되, 실제 MCP streamable HTTP server를 경유하는 executor 옵션을 추가했다.
+
+구현 파일:
+
+- `app/chat/mcp/client_executor.py`
+- `tests/chat/tools/test_mcp_client_executor.py`
+
+사용 예:
+
+```python
+from app.chat.graph.graph import run_chat_graph
+from app.chat.mcp.client_executor import MCPHTTPToolExecutor
+
+result = run_chat_graph(
+    "S0 비승인약물이 뭐야?",
+    top_k=3,
+    use_llm=False,
+    tool_executor=MCPHTTPToolExecutor(),
+)
+```
+
+실행 전제:
+
+```bash
+uv run python -m app.chat.mcp.fastmcp_server
+```
+
+검증 결과:
+
+- route: `rag`
+- `rag_tool_name`: `rag_search_tool`
+- `match_count`: 3
+- `errors`: `[]`
+
+주의:
+
+`MCPHTTPToolExecutor`는 현재 동기 graph runner에 맞춘 sync wrapper다. 이미 실행 중인 event loop 안에서는 사용하지 않도록 guard를 둔다. FastAPI async path에서 외부 MCP executor를 운영 기본값으로 쓰려면 async graph runner 또는 thread/offload 정책을 별도로 설계해야 한다.
