@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
 
+from app.chat.drug_search.schemas import AdministrationRoute, CompetitionPeriod, DrugSearchResult
+
 
 class ToolError(BaseModel):
     stage: str
@@ -31,6 +33,29 @@ class RagSearchToolOutput(BaseModel):
     query: str
     top_k: int
     results: list[RagSearchResult] = Field(default_factory=list)
+    errors: list[ToolError] = Field(default_factory=list)
+    request_id: str | None = None
+
+    @property
+    def ok(self) -> bool:
+        return not self.errors
+
+
+class DrugSearchToolRequest(BaseModel):
+    query: str = Field(min_length=1)
+    product_name: str | None = None
+    ingredient_name: str | None = None
+    competition_period: CompetitionPeriod = CompetitionPeriod.UNKNOWN
+    route: AdministrationRoute | None = None
+    sport: str | None = None
+    dose: str | None = None
+    request_id: str | None = None
+
+
+class DrugSearchToolOutput(BaseModel):
+    tool_name: str = "drug_search_tool"
+    query: str
+    result: DrugSearchResult | None = None
     errors: list[ToolError] = Field(default_factory=list)
     request_id: str | None = None
 

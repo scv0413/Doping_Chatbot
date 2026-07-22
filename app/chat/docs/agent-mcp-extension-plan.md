@@ -243,8 +243,11 @@ Agent 확장은 “LLM에게 마음대로 맡기는 것”이 아니다.
 - `app/chat/tools/` 디렉토리 생성
 - `RagSearchRequest`, `RagSearchResult`, `RagSearchToolOutput`, `ToolError` schema 정의
 - `rag_search_tool` 구현
+- `DrugSearchToolRequest`, `DrugSearchToolOutput` schema 정의
+- `drug_search_tool` 구현
 - tool 단위 pytest 작성
 - 실제 Chroma index 기반 smoke 확인
+- deterministic fake searcher 기반 drug_search_tool smoke 확인
 
 ## LangGraph 전환 반영 상태
 
@@ -270,7 +273,8 @@ rewritten_query
 
 ## 다음 구현 후보
 
-1. LangSmith tool trace 비교
-2. `rag_search_output` 기반 retrieval/tool eval 추가
-3. MCP server exposure 전 input/output schema 안정화
-4. `drug_search_tool`, `pharmacology_info_tool`, `field_response_tool` 순차 구현
+1. LangGraph drug_search node에서 `drug_search_tool` 호출로 점진 전환
+2. LangSmith tool trace 비교
+3. `rag_search_output`와 `drug_search_tool` 기반 tool eval 확장
+4. MCP server exposure 전 input/output schema 안정화
+5. `pharmacology_info_tool`, `field_response_tool` 순차 구현
