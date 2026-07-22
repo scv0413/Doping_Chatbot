@@ -441,3 +441,39 @@ uv run python scripts/mcp_smoke.py --call-pharmacology
 - `pharmacology_info_tool` 호출 결과가 structured content로 반환됐다.
 
 이 단계부터는 실제 MCP client/inspector가 연결할 수 있는 server entrypoint가 생겼다.
+
+
+## LangSmith MCP Eval 반영 상태
+
+MCP server entrypoint를 실제 LangSmith eval target에 연결했다.
+
+구현 파일:
+
+- `app/chat/evals/langsmith_mcp_eval.py`
+- `tests/chat/evals/test_langsmith_mcp_eval.py`
+
+평가 흐름:
+
+1. LangSmith dataset case의 `query`를 읽는다.
+2. local router로 `rag`, `drug_search`, `drug_search_with_rag`를 결정한다.
+3. route에 따라 MCP client가 streamable HTTP endpoint를 통해 tool을 호출한다.
+4. MCP structured content를 LangSmith evaluator가 읽을 수 있는 field로 정규화한다.
+5. 기존 retrieval evaluator와 `tool_contract_evaluator`를 재사용한다.
+6. MCP 전용 `mcp_connection_evaluator`로 tool 목록과 연결 오류를 확인한다.
+
+실행:
+
+```bash
+uv run python -m app.chat.mcp.fastmcp_server
+uv run python -m app.chat.evals.langsmith_mcp_eval --top-k 3 --skip-dataset-upload
+```
+
+검증 결과:
+
+- local MCP target smoke에서 `mcp_connection_score=1`, `tool_contract_score=1` 확인
+- 실제 LangSmith experiment 생성 확인: `mcp-tool-top3-rewrite-True-94c6129c`
+- 10개 case 실행 완료
+
+의미:
+
+Graph 내부 tool contract 평가에서 한 단계 더 나아가, 실제 MCP transport를 경유해도 tool 호출 계약과 retrieval 품질 평가가 유지되는지 확인할 수 있게 됐다.

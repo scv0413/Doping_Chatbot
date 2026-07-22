@@ -187,6 +187,18 @@ uv run python scripts/mcp_smoke.py --call-pharmacology
 - `ok`가 `true`여야 한다.
 - pharmacology tool 호출 결과가 structured content로 반환되어야 한다.
 
+LangSmith MCP tool eval:
+
+```bash
+uv run python -m app.chat.evals.langsmith_mcp_eval --top-k 3 --skip-dataset-upload
+```
+
+성공 기준:
+
+- LangSmith experiment 링크가 출력되어야 한다.
+- 10개 retrieval eval case가 실행되어야 한다.
+- `mcp_connection`과 `tool_contract`가 주요 확인 지표다.
+
 ## 9. 최종 검증
 
 ```bash

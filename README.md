@@ -171,6 +171,14 @@ uv run python scripts/mcp_smoke.py --call-pharmacology
 - `ok`가 `true`여야 한다.
 - `pharmacology_call.structured_content.tool_name`이 `pharmacology_info_tool`이어야 한다.
 
+LangSmith MCP tool eval 실행:
+
+```bash
+uv run python -m app.chat.evals.langsmith_mcp_eval --top-k 3 --skip-dataset-upload
+```
+
+이 명령은 실행 중인 MCP endpoint를 통해 tool을 호출하고, LangSmith에 `mcp_connection`, `tool_contract`, retrieval 품질 지표를 함께 기록합니다.
+
 ## Docker
 
 Build:
