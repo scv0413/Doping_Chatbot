@@ -225,7 +225,7 @@ uv run pytest tests/test_docker_artifacts.py
 최근 로컬 검증 기준:
 
 - `uv run ruff check app tests scripts`: pass
-- `uv run pytest`: 144 passed, 1 dependency warning
+- `uv run pytest`: 173 passed, 1 dependency warning
 - Docker build: pass
 - Docker container non-root: pass, user id `999`
 - Docker `/health`: pass
@@ -239,6 +239,7 @@ uv run pytest tests/test_docker_artifacts.py
 - debug API, runtime inspector, LangSmith eval runner에서만 내부 옵션을 명시할 수 있습니다.
 - 최종 답변용 domain result와 LangSmith/tool trace용 tool output을 둘 다 graph state에 남깁니다.
 - `/health`는 process health, `/ready`는 data/index/runtime readiness를 확인합니다.
+- 기본 graph 실행은 내부 MCP-compatible registry executor를 사용합니다. 외부 MCP HTTP executor는 별도 server 연동과 transport 검증용 옵션이며, 장애 시 내부 executor로 fallback합니다.
 - CI Docker 검증은 secret/data가 없으므로 `/ready`의 JSON shape를 확인하고, 실제 staging smoke는 `ready`까지 요구합니다.
 
 ## Known Limitations

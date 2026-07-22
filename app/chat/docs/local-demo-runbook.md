@@ -199,6 +199,8 @@ uv run python -m app.chat.evals.langsmith_mcp_eval --top-k 3 --skip-dataset-uplo
 - 10개 retrieval eval case가 실행되어야 한다.
 - `mcp_connection`과 `tool_contract`가 주요 확인 지표다.
 
+운영 기본값은 graph 내부의 MCP-compatible registry executor다. 외부 MCP HTTP executor는 MCP transport를 실제로 검증하거나 외부 agent와 연동할 때만 사용한다. MCP server가 일시적으로 응답하지 않으면 HTTP executor는 설정된 timeout/retry 뒤 내부 executor로 fallback한다.
+
 ## 9. 최종 검증
 
 ```bash
@@ -208,5 +210,5 @@ uv run pytest
 
 현재 기준:
 
-- full tests: 144 passed, 1 dependency warning
+- full tests: 173 passed, 1 dependency warning
 - ruff: pass
