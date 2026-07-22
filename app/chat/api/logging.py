@@ -39,14 +39,15 @@ class JsonLogFormatter(logging.Formatter):
 
 
 def configure_logging() -> None:
-    root_logger = logging.getLogger()
-    root_logger.setLevel(logging.INFO)
+    app_logger = logging.getLogger("app.chat")
+    app_logger.setLevel(logging.INFO)
 
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(JsonLogFormatter())
 
-    root_logger.handlers.clear()
-    root_logger.addHandler(handler)
+    app_logger.handlers.clear()
+    app_logger.addHandler(handler)
+    app_logger.propagate = False
 
 
 async def request_logging_middleware(
@@ -54,29 +55,28 @@ async def request_logging_middleware(
     call_next: Callable[[Request], Awaitable[Response]],
 ) -> Response:
     request_id = get_or_create_request_id(request)
+    request.state.request_id = request_id
     token = request_id_context.set(request_id)
     started_at = time.perf_counter()
 
     try:
         response = await call_next(request)
-    finally:
+        response.headers[REQUEST_ID_HEADER] = request_id
         duration_ms = (time.perf_counter() - started_at) * 1000
 
-    response.headers[REQUEST_ID_HEADER] = request_id
-    duration_ms = (time.perf_counter() - started_at) * 1000
-
-    logger.info(
-        "request_completed",
-        extra={
-            "request_id": request_id,
-            "method": request.method,
-            "path": request.url.path,
-            "status_code": response.status_code,
-            "duration_ms": round(duration_ms, 2),
-        },
-    )
-    request_id_context.reset(token)
-    return response
+        logger.info(
+            "request_completed",
+            extra={
+                "request_id": request_id,
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": response.status_code,
+                "duration_ms": round(duration_ms, 2),
+            },
+        )
+        return response
+    finally:
+        request_id_context.reset(token)
 
 
 def get_or_create_request_id(request: Request) -> str:

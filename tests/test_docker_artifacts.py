@@ -7,6 +7,7 @@ def test_dockerfile_runs_fastapi_api() -> None:
     assert "ghcr.io/astral-sh/uv:python3.12" in dockerfile
     assert "uv sync --frozen --no-dev" in dockerfile
     assert "app.chat.api.main:app" in dockerfile
+    assert "--no-access-log" in dockerfile
     assert "0.0.0.0" in dockerfile
     assert "8000" in dockerfile
     assert "USER appuser" in dockerfile
