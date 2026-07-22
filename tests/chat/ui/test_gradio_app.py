@@ -58,3 +58,13 @@ def test_build_demo_creates_gradio_blocks() -> None:
 
     assert demo is not None
     assert hasattr(demo, "launch")
+
+
+def test_respond_does_not_expose_internal_runtime_metadata() -> None:
+    answer, citations = respond("S0 비승인약물이 뭐야?", runner=fake_runner)
+    combined = answer + "\n" + citations
+
+    assert "engine" not in combined
+    assert "top_k" not in combined
+    assert "use_llm" not in combined
+    assert "retrieval_attempts" not in combined

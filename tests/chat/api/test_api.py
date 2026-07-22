@@ -79,9 +79,12 @@ def test_create_chat_response_endpoint_accepts_query_only() -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["answer"].startswith("stub answer")
-    assert body["route"] == "rag"
-    assert body["engine"] == ChatEngine.GRAPH
-    assert body["retrieval_attempts"] == 1
+    assert body["query"] == "도핑 검사관 신분이 불분명하면 어떻게 해?"
+    assert "route" not in body
+    assert "engine" not in body
+    assert "top_k" not in body
+    assert "use_llm" not in body
+    assert "retrieval_attempts" not in body
 
 
 def test_create_chat_response_rejects_internal_options() -> None:
@@ -121,7 +124,7 @@ def test_create_debug_chat_response_accepts_internal_options() -> None:
     assert body["engine"] == ChatEngine.GRAPH
 
 
-def test_create_chat_response_accepts_policy_defaults() -> None:
+def test_create_chat_response_hides_runtime_policy_defaults() -> None:
     client = build_test_client()
 
     response = client.post(
@@ -131,9 +134,12 @@ def test_create_chat_response_accepts_policy_defaults() -> None:
 
     assert response.status_code == 200
     body = response.json()
-    assert body["engine"] == ChatEngine.GRAPH
-    assert body["top_k"] == 3
-    assert body["use_llm"] is False
+    assert body["answer"].startswith("stub answer")
+    assert "engine" not in body
+    assert "top_k" not in body
+    assert "use_llm" not in body
+    assert "policy_reason" not in body
+    assert "policy_matched_rules" not in body
 
 
 def test_create_chat_response_returns_standard_validation_error() -> None:
@@ -244,3 +250,27 @@ def test_json_log_formatter_outputs_structured_json() -> None:
     assert payload["path"] == "/health"
     assert payload["status_code"] == 200
     assert payload["duration_ms"] == 12.34
+
+
+def test_public_chat_response_schema_hides_internal_runtime_fields() -> None:
+    client = build_test_client()
+
+    response = client.get("/openapi.json")
+
+    assert response.status_code == 200
+    schemas = response.json()["components"]["schemas"]
+    public_properties = schemas["PublicChatResponse"]["properties"]
+    chat_properties = schemas["ChatResponse"]["properties"]
+
+    for internal_field in (
+        "route",
+        "engine",
+        "top_k",
+        "use_llm",
+        "policy_reason",
+        "policy_matched_rules",
+        "retrieval_attempts",
+        "retrieval_retry_reason",
+    ):
+        assert internal_field not in public_properties
+        assert internal_field in chat_properties
