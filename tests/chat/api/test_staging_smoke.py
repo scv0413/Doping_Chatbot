@@ -68,3 +68,44 @@ def test_run_smoke_checks_public_contract_and_pharmacology_policy(monkeypatch) -
         "debug_chat",
     ]
     assert all(result.passed for result in results)
+
+
+def test_run_smoke_forwards_api_key_to_chat_endpoints(monkeypatch) -> None:
+    received_headers: list[dict[str, str]] = []
+
+    def fake_request_json(
+        method: str,
+        url: str,
+        payload: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+        timeout: float = staging_smoke.DEFAULT_TIMEOUT_SECONDS,
+    ) -> tuple[int, dict[str, Any], dict[str, str]]:
+        del method, timeout
+        if "/api/" in url:
+            received_headers.append(headers or {})
+        request_headers = headers or {}
+        response_headers = {
+            staging_smoke.REQUEST_ID_HEADER: request_headers.get(
+                staging_smoke.REQUEST_ID_HEADER,
+                "generated",
+            )
+        }
+        if url.endswith("/health"):
+            return 200, {"status": "ok"}, response_headers
+        if url.endswith("/ready"):
+            return 200, {"status": "ready", "checks": []}, response_headers
+        if url.endswith("/api/v1/debug/chat-responses"):
+            return 200, {"answer": "debug", "top_k": 3, "errors": []}, response_headers
+        if payload and "top_k" in payload:
+            return 422, {"error": {"code": "validation_error"}}, response_headers
+        if payload and "반감기" in str(payload.get("query", "")):
+            return 200, {"answer": "half-life", "pharmacology_status": "found", "errors": []}, response_headers
+        return 200, {"answer": "answer", "errors": []}, response_headers
+
+    monkeypatch.setattr(staging_smoke, "request_json", fake_request_json)
+
+    results = staging_smoke.run_smoke("http://testserver", api_key="admin-secret")
+
+    assert all(result.passed for result in results)
+    assert received_headers
+    assert all(headers["X-API-Key"] == "admin-secret" for headers in received_headers)

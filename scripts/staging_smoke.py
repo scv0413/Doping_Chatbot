@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 import sys
 from dataclasses import dataclass
 from typing import Any
@@ -60,9 +61,14 @@ def pass_if(name: str, condition: bool, detail: str) -> SmokeResult:
     return SmokeResult(name=name, passed=condition, detail=detail)
 
 
-def run_smoke(base_url: str, timeout: float = DEFAULT_TIMEOUT_SECONDS) -> list[SmokeResult]:
+def run_smoke(
+    base_url: str,
+    timeout: float = DEFAULT_TIMEOUT_SECONDS,
+    api_key: str | None = None,
+) -> list[SmokeResult]:
     base_url = base_url.rstrip("/")
     results: list[SmokeResult] = []
+    auth_headers = {"X-API-Key": api_key} if api_key else {}
 
     status_code, body, headers = request_json("GET", f"{base_url}/health", timeout=timeout)
     results.append(
@@ -89,7 +95,7 @@ def run_smoke(base_url: str, timeout: float = DEFAULT_TIMEOUT_SECONDS) -> list[S
         "POST",
         f"{base_url}/api/v1/chat-responses",
         payload={"query": "S0 비승인약물이 뭐야?"},
-        headers={REQUEST_ID_HEADER: request_id},
+        headers={REQUEST_ID_HEADER: request_id, **auth_headers},
         timeout=timeout,
     )
     results.append(
@@ -107,6 +113,7 @@ def run_smoke(base_url: str, timeout: float = DEFAULT_TIMEOUT_SECONDS) -> list[S
         "POST",
         f"{base_url}/api/v1/chat-responses",
         payload={"query": "S0 비승인약물이 뭐야?", "top_k": 1},
+        headers=auth_headers,
         timeout=timeout,
     )
     results.append(
@@ -121,6 +128,7 @@ def run_smoke(base_url: str, timeout: float = DEFAULT_TIMEOUT_SECONDS) -> list[S
         "POST",
         f"{base_url}/api/v1/chat-responses",
         payload={"query": "약물 반감기로 경기기간 복용 가능 여부를 판단해도 돼?"},
+        headers=auth_headers,
         timeout=timeout,
     )
     results.append(
@@ -146,6 +154,7 @@ def run_smoke(base_url: str, timeout: float = DEFAULT_TIMEOUT_SECONDS) -> list[S
             "use_llm": False,
             "engine": "graph",
         },
+        headers=auth_headers,
         timeout=timeout,
     )
     results.append(
@@ -169,13 +178,18 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run staging smoke checks against the chat API.")
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
     parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT_SECONDS)
+    parser.add_argument("--api-key", default=os.getenv("STAGING_SMOKE_API_KEY"))
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
     try:
-        results = run_smoke(base_url=args.base_url, timeout=args.timeout)
+        results = run_smoke(
+            base_url=args.base_url,
+            timeout=args.timeout,
+            api_key=args.api_key,
+        )
     except RuntimeError as exc:
         print(f"[FAIL] smoke_error: {exc}", file=sys.stderr)
         return 1

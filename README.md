@@ -239,7 +239,7 @@ uv run pytest tests/test_docker_artifacts.py
 최근 로컬 검증 기준:
 
 - `uv run ruff check app tests scripts`: pass
-- `uv run pytest`: 186 passed, 1 dependency warning
+- `uv run pytest`: 187 passed, 1 dependency warning
 - Docker build: pass
 - Docker container non-root: pass, user id `999`
 - Docker `/health`: pass

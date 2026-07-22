@@ -117,6 +117,10 @@ API가 실행 중인 상태에서 실행한다.
 
 ```bash
 uv run python scripts/staging_smoke.py --base-url http://127.0.0.1:8000
+
+# API_AUTH_ENABLED=true 환경에서는 admin key를 전달
+STAGING_SMOKE_API_KEY="$ADMIN_API_KEY" uv run python scripts/staging_smoke.py \
+  --base-url http://127.0.0.1:8000
 ```
 
 확인 항목:
@@ -138,7 +142,7 @@ uv run python scripts/release_quality_gate.py
 
 성공 시 `route_match`, `source_hit`, `term_hit`, `retrieval_quality`, `tool_contract` 평균과 각 case 결과가 출력된다. 실패 시 종료 코드 `1`을 반환한다.
 
-## 7. LangSmith Eval
+## 8. LangSmith Eval
 
 Retrieval/tool eval:
 
@@ -162,7 +166,7 @@ uv run python -m app.chat.evals.langsmith_tool_eval --top-k 3 --skip-dataset-upl
 
 특히 `drug_half_life` 케이스에서 route는 `rag`여도 `pharmacology_tool_name=pharmacology_info_tool`이 보여야 한다.
 
-## 8. MCP Server 시연
+## 9. MCP Server 시연
 
 FastMCP server 실행:
 
@@ -211,7 +215,7 @@ uv run python -m app.chat.evals.langsmith_mcp_eval --top-k 3 --skip-dataset-uplo
 
 운영 기본값은 graph 내부의 MCP-compatible registry executor다. 외부 MCP HTTP executor는 MCP transport를 실제로 검증하거나 외부 agent와 연동할 때만 사용한다. MCP server가 일시적으로 응답하지 않으면 HTTP executor는 설정된 timeout/retry 뒤 내부 executor로 fallback한다.
 
-## 9. 최종 검증
+## 10. 최종 검증
 
 ```bash
 uv run ruff check app tests scripts
@@ -220,5 +224,5 @@ uv run pytest
 
 현재 기준:
 
-- full tests: 186 passed, 1 dependency warning
+- full tests: 187 passed, 1 dependency warning
 - ruff: pass

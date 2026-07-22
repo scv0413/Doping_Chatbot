@@ -48,7 +48,13 @@ uv run uvicorn app.chat.api.main:app --host 127.0.0.1 --port 8000
 
 ```bash
 uv run python scripts/staging_smoke.py --base-url http://127.0.0.1:8000
+
+# API_AUTH_ENABLED=true 환경에서는 debug 권한이 있는 admin key 필요
+STAGING_SMOKE_API_KEY="$ADMIN_API_KEY" uv run python scripts/staging_smoke.py \
+  --base-url http://127.0.0.1:8000
 ```
+
+`--api-key` 또는 `STAGING_SMOKE_API_KEY`로 전달한 key는 chat/debug 요청에만 붙는다. health/readiness probe는 인증 없이 유지한다.
 
 ## 설계 판단
 
