@@ -3,6 +3,13 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.chat.api.dependencies import ChatService, get_chat_service
 from app.chat.api.readiness import ReadinessResponse, build_readiness_response
+from app.chat.api.security import (
+    AuthenticatedPrincipal,
+    UserRole,
+    enforce_rate_limit,
+    log_chat_access,
+    require_roles,
+)
 from app.chat.config import settings
 from app.chat.runtime import ChatRequest, ChatResponse, CitationSummary
 
@@ -54,14 +61,20 @@ def readiness_check() -> ReadinessResponse:
 @router.post("/api/v1/chat-responses", response_model=PublicChatResponse, tags=["chat"])
 def create_chat_response(
     request: PublicChatRequest,
+    principal: AuthenticatedPrincipal = Depends(enforce_rate_limit),
     chat_service: ChatService = Depends(get_chat_service),
 ) -> PublicChatResponse:
-    return PublicChatResponse.from_chat_response(chat_service(ChatRequest(query=request.query)))
+    response = PublicChatResponse.from_chat_response(chat_service(ChatRequest(query=request.query)))
+    log_chat_access(principal, endpoint="/api/v1/chat-responses", status_code=200)
+    return response
 
 
 @router.post("/api/v1/debug/chat-responses", response_model=ChatResponse, tags=["debug"])
 def create_debug_chat_response(
     request: ChatRequest,
+    principal: AuthenticatedPrincipal = Depends(require_roles(UserRole.ADMIN)),
     chat_service: ChatService = Depends(get_chat_service),
 ) -> ChatResponse:
-    return chat_service(request)
+    response = chat_service(request)
+    log_chat_access(principal, endpoint="/api/v1/debug/chat-responses", status_code=200)
+    return response

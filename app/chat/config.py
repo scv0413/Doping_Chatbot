@@ -11,6 +11,12 @@ class Settings(BaseSettings):
     app_env: str = Field(default="local", alias="APP_ENV")
     app_name: str = Field(default="doping-chatbot", alias="APP_NAME")
 
+    api_auth_enabled: bool = Field(default=False, alias="API_AUTH_ENABLED")
+    api_key_roles: str = Field(default="", alias="API_KEY_ROLES")
+    api_rate_limit_enabled: bool = Field(default=False, alias="API_RATE_LIMIT_ENABLED")
+    api_rate_limit_requests: int = Field(default=30, alias="API_RATE_LIMIT_REQUESTS")
+    api_rate_limit_window_seconds: int = Field(default=60, alias="API_RATE_LIMIT_WINDOW_SECONDS")
+
     openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
 
     llm_provider: str = Field(default="openai", alias="LLM_PROVIDER")
