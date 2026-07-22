@@ -46,7 +46,16 @@ def test_ready_endpoint_reports_runtime_dependencies() -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["status"] in {"ready", "not_ready"}
-    assert {check["name"] for check in body["checks"]} == {"processed_data_dir", "index_dir"}
+    check_names = {check["name"] for check in body["checks"]}
+    assert {
+        "processed_data_dir",
+        "processed_chunks",
+        "index_dir",
+        "chroma_directory",
+        "chroma_collection",
+        "openai_api_key",
+        "runtime_import",
+    }.issubset(check_names)
 
 
 def test_root_endpoint_points_to_docs() -> None:

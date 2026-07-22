@@ -12,6 +12,7 @@ __pycache__/
 .env
 
 # Data and indexes
+local_archive/
 data/raw/
 data/processed/
 data/indexes/
