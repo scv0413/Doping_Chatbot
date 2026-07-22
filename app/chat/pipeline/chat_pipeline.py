@@ -19,7 +19,7 @@ from app.chat.retrieval.query_rewriter import rewrite_query
 from app.chat.retrieval.retriever import search
 from app.chat.retrieval.schemas import RetrievalMatch
 from app.chat.router.intent_router import ChatRoute, RouteDecision, route_question
-from app.chat.tools.schemas import RagSearchToolOutput
+from app.chat.tools.schemas import DrugSearchToolOutput, RagSearchToolOutput
 
 
 CATEGORY_RETRIEVAL_TERMS = {
@@ -54,6 +54,7 @@ class ChatPipelineResult(BaseModel):
     search_input: DrugSearchInput
     decision: RouteDecision
     drug_result: DrugSearchResult | None = None
+    drug_search_tool_output: DrugSearchToolOutput | None = None
     pharmacology_result: PharmacologyInfoResult | None = None
     retrieval_query: str | None = None
     rewritten_query: str | None = None
@@ -81,6 +82,7 @@ def run_chat_pipeline(
     errors: list[PipelineError] = []
 
     drug_result: DrugSearchResult | None = None
+    drug_search_tool_output: DrugSearchToolOutput | None = None
     if should_run_drug_search(decision):
         drug_result = run_drug_search_step(
             search_input=resolved_input,

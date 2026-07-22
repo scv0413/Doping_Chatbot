@@ -120,6 +120,7 @@ def state_to_pipeline_result(state: ChatGraphState) -> ChatPipelineResult:
         search_input=state["search_input"],
         decision=state["decision"],
         drug_result=state.get("drug_result"),
+        drug_search_tool_output=state.get("drug_search_tool_output"),
         pharmacology_result=state.get("pharmacology_result"),
         retrieval_query=state.get("retrieval_query"),
         rewritten_query=state.get("rewritten_query"),

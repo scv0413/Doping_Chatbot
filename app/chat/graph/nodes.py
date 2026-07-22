@@ -6,6 +6,7 @@ from app.chat.answer.chain import generate_answer
 from app.chat.answer.types import AnswerLLM
 from app.chat.drug_search.kada_client import search_kada_drugs
 from app.chat.pharmacology.service import search_pharmacology_info, should_run_pharmacology_info
+from app.chat.drug_search.schemas import build_needs_verification_result
 from app.chat.pipeline.chat_pipeline import (
     DrugSearcher,
     PharmacologySearcher,
@@ -15,7 +16,6 @@ from app.chat.pipeline.chat_pipeline import (
     build_pipeline_error,
     build_retrieval_query,
     normalize_pipeline_input,
-    run_drug_search_step,
     run_pharmacology_step,
     run_query_rewrite_step,
     should_run_drug_search,
@@ -24,8 +24,9 @@ from app.chat.pipeline.chat_pipeline import (
 from app.chat.retrieval.query_rewriter import rewrite_query
 from app.chat.retrieval.retriever import search
 from app.chat.router.intent_router import route_question
+from app.chat.tools.drug_search_tool import run_drug_search_tool
 from app.chat.tools.rag_search_tool import run_rag_search_tool, tool_output_to_retrieval_matches
-from app.chat.tools.schemas import RagSearchRequest, ToolError
+from app.chat.tools.schemas import DrugSearchToolRequest, RagSearchRequest, ToolError
 from app.chat.graph.state import ChatGraphState
 
 DEFAULT_TOP_K = 3
@@ -60,12 +61,29 @@ def build_route_node(dependencies: ChatGraphDependencies) -> Callable[[ChatGraph
 def build_drug_search_node(dependencies: ChatGraphDependencies) -> Callable[[ChatGraphState], dict[str, Any]]:
     def node(state: ChatGraphState) -> dict[str, Any]:
         errors = list(state.get("errors", []))
-        drug_result = run_drug_search_step(
-            search_input=state["search_input"],
+        search_input = state["search_input"]
+        drug_search_tool_output = run_drug_search_tool(
+            DrugSearchToolRequest(
+                query=search_input.query,
+                product_name=search_input.product_name,
+                ingredient_name=search_input.ingredient_name,
+                competition_period=search_input.competition_period,
+                route=search_input.route,
+                sport=search_input.sport,
+                dose=search_input.dose,
+            ),
             drug_searcher=dependencies.drug_searcher,
-            errors=errors,
         )
-        return {"drug_result": drug_result, "errors": errors}
+        errors.extend(tool_errors_to_pipeline_errors(drug_search_tool_output.errors, stage="drug_search"))
+        drug_result = drug_search_tool_output.result or build_needs_verification_result(
+            search_input=search_input,
+            recommended_action="약물검색 중 오류가 발생했습니다. 제품명과 성분명을 확인한 뒤 다시 조회하거나 KADA 공식 자료를 확인하세요.",
+        )
+        return {
+            "drug_result": drug_result,
+            "drug_search_tool_output": drug_search_tool_output,
+            "errors": errors,
+        }
 
     return node
 
@@ -117,7 +135,7 @@ def build_retrieve_node(dependencies: ChatGraphDependencies) -> Callable[[ChatGr
             ),
             retriever=dependencies.retriever,
         )
-        errors.extend(tool_errors_to_pipeline_errors(rag_search_output.errors))
+        errors.extend(tool_errors_to_pipeline_errors(rag_search_output.errors, stage="retrieval"))
         retrieval_matches = tool_output_to_retrieval_matches(rag_search_output)
         retry_reason = assess_retrieval_retry_reason(retrieval_matches)
         return {
@@ -139,10 +157,10 @@ def retry_rewrite_node(state: ChatGraphState) -> dict[str, Any]:
     }
 
 
-def tool_errors_to_pipeline_errors(tool_errors: list[ToolError]) -> list:
+def tool_errors_to_pipeline_errors(tool_errors: list[ToolError], stage: str) -> list:
     return [
         build_pipeline_error(
-            stage="retrieval",
+            stage=stage,
             exc=RuntimeError(error.message),
         ).model_copy(update={"error_type": error.error_type or "ToolError"})
         for error in tool_errors

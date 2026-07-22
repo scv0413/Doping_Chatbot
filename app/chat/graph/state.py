@@ -5,7 +5,7 @@ from app.chat.pharmacology.schemas import PharmacologyInfoResult
 from app.chat.pipeline.chat_pipeline import PipelineError
 from app.chat.retrieval.schemas import RetrievalMatch
 from app.chat.router.intent_router import RouteDecision
-from app.chat.tools.schemas import RagSearchToolOutput
+from app.chat.tools.schemas import DrugSearchToolOutput, RagSearchToolOutput
 
 
 class ChatGraphState(TypedDict):
@@ -16,6 +16,7 @@ class ChatGraphState(TypedDict):
     search_input: NotRequired[DrugSearchInput]
     decision: NotRequired[RouteDecision]
     drug_result: NotRequired[DrugSearchResult | None]
+    drug_search_tool_output: NotRequired[DrugSearchToolOutput | None]
     pharmacology_result: NotRequired[PharmacologyInfoResult | None]
     retrieval_query: NotRequired[str | None]
     rewritten_query: NotRequired[str | None]

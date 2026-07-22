@@ -103,8 +103,12 @@ def test_drug_search_node_uses_fallback_error_path() -> None:
     state.update(build_route_node(dependencies)(state))
     state.update(build_drug_search_node(dependencies)(state))
 
+    assert state["drug_search_tool_output"].tool_name == "drug_search_tool"
+    assert state["drug_search_tool_output"].result is None
+    assert state["drug_search_tool_output"].errors[0].stage == "drug_search"
     assert state["drug_result"].status is DrugRiskStatus.NEEDS_VERIFICATION
     assert state["errors"][0].stage == "drug_search"
+    assert state["errors"][0].error_type == "RuntimeError"
 
 
 def test_graph_matches_pipeline_for_rag_flow() -> None:
@@ -150,6 +154,9 @@ def test_graph_matches_pipeline_for_drug_search_only_flow() -> None:
     assert graph_result.drug_result is not None
     assert pipeline_result.drug_result is not None
     assert graph_result.drug_result.status == pipeline_result.drug_result.status
+    assert graph_result.drug_search_tool_output is not None
+    assert graph_result.drug_search_tool_output.tool_name == "drug_search_tool"
+    assert graph_result.drug_search_tool_output.result is not None
     assert graph_result.retrieval_matches == []
     assert graph_result.errors == []
 
@@ -177,6 +184,9 @@ def test_graph_matches_pipeline_for_drug_search_with_rag_flow() -> None:
     assert graph_result.drug_result is not None
     assert pipeline_result.drug_result is not None
     assert graph_result.drug_result.status == pipeline_result.drug_result.status
+    assert graph_result.drug_search_tool_output is not None
+    assert graph_result.drug_search_tool_output.tool_name == "drug_search_tool"
+    assert graph_result.drug_search_tool_output.result is not None
     assert chunk_ids(graph_result) == chunk_ids(pipeline_result)
     assert graph_result.errors == []
 
