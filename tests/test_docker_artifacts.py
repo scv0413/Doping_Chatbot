@@ -59,3 +59,15 @@ def test_github_actions_builds_and_smoke_tests_docker_image() -> None:
     assert "ready[\"status\"] in {\"ready\", \"not_ready\"}" in workflow
     assert "uv run pytest" in workflow
     assert "uv run ruff check app tests" in workflow
+
+
+def test_release_workflow_publishes_tagged_image_to_ghcr() -> None:
+    workflow = Path(".github/workflows/release-image.yml").read_text(encoding="utf-8")
+
+    assert "packages: write" in workflow
+    assert "ghcr.io" in workflow
+    assert "docker/login-action@v4" in workflow
+    assert "docker/metadata-action@v6" in workflow
+    assert "docker/build-push-action@v7" in workflow
+    assert "type=semver,pattern={{version}}" in workflow
+    assert "digest" in workflow

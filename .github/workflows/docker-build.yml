@@ -28,7 +28,7 @@ jobs:
         run: uv sync --frozen --extra dev
 
       - name: Lint
-        run: uv run ruff check app tests
+        run: uv run ruff check app tests scripts
 
       - name: Test
         run: uv run pytest
