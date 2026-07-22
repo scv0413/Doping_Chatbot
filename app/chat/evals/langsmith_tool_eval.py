@@ -47,9 +47,12 @@ def build_graph_tool_target(
             use_llm=use_llm,
             query_rewriter=eval_query_rewriter,
         )
-        tool_output = result.rag_search_output
-        tool_results = tool_output.results if tool_output else []
-        tool_errors = tool_output.errors if tool_output else []
+        rag_output = result.rag_search_output
+        rag_results = rag_output.results if rag_output else []
+        rag_errors = rag_output.errors if rag_output else []
+        drug_output = result.drug_search_tool_output
+        drug_result = drug_output.result if drug_output else None
+        drug_errors = drug_output.errors if drug_output else []
 
         return {
             "actual_route": result.decision.route.value,
@@ -59,16 +62,29 @@ def build_graph_tool_target(
             "final_query": result.rewritten_query,
             "top_k": top_k,
             "rewrite_enabled": result.rewritten_query != result.retrieval_query,
-            "tool_name": tool_output.tool_name if tool_output else None,
-            "tool_query": tool_output.query if tool_output else None,
-            "tool_top_k": tool_output.top_k if tool_output else None,
-            "tool_result_count": len(tool_results),
-            "tool_errors": [error.model_dump() for error in tool_errors],
+            "tool_name": rag_output.tool_name if rag_output else None,
+            "tool_query": rag_output.query if rag_output else None,
+            "tool_top_k": rag_output.top_k if rag_output else None,
+            "tool_result_count": len(rag_results),
+            "tool_errors": [error.model_dump() for error in rag_errors],
+            "tool_source_ids": [tool_result.source_id for tool_result in rag_results],
+            "tool_chunk_ids": [tool_result.chunk_id for tool_result in rag_results],
+            "rag_tool_name": rag_output.tool_name if rag_output else None,
+            "rag_tool_query": rag_output.query if rag_output else None,
+            "rag_tool_top_k": rag_output.top_k if rag_output else None,
+            "rag_tool_result_count": len(rag_results),
+            "rag_tool_errors": [error.model_dump() for error in rag_errors],
+            "rag_tool_source_ids": [tool_result.source_id for tool_result in rag_results],
+            "rag_tool_chunk_ids": [tool_result.chunk_id for tool_result in rag_results],
+            "drug_tool_name": drug_output.tool_name if drug_output else None,
+            "drug_tool_query": drug_output.query if drug_output else None,
+            "drug_tool_status": drug_result.status.value if drug_result else None,
+            "drug_tool_matched_substances": drug_result.matched_substances if drug_result else [],
+            "drug_tool_prohibited_categories": drug_result.prohibited_categories if drug_result else [],
+            "drug_tool_errors": [error.model_dump() for error in drug_errors],
             "match_count": len(result.retrieval_matches),
             "source_ids": [match.source_id for match in result.retrieval_matches],
-            "tool_source_ids": [tool_result.source_id for tool_result in tool_results],
             "chunk_ids": [match.chunk_id for match in result.retrieval_matches],
-            "tool_chunk_ids": [tool_result.chunk_id for tool_result in tool_results],
             "distances": [round(match.distance, 4) for match in result.retrieval_matches],
             "context_chars": sum(len(match.text) for match in result.retrieval_matches),
             "retrieved_text": "\n".join(match.text for match in result.retrieval_matches),
@@ -82,32 +98,58 @@ def build_graph_tool_target(
     return target
 
 
+def should_have_rag_tool(route: str | None) -> bool:
+    return route in {"rag", "drug_search_with_rag"}
+
+
+def should_have_drug_tool(route: str | None) -> bool:
+    return route in {"drug_search", "drug_search_with_rag"}
+
+
+def score_rag_tool_contract(outputs: dict[str, Any]) -> bool:
+    route = outputs.get("actual_route")
+    rag_tool_name = outputs.get("rag_tool_name")
+    rag_tool_result_count = int(outputs.get("rag_tool_result_count", outputs.get("tool_result_count", 0)))
+    rag_tool_errors = list(outputs.get("rag_tool_errors", outputs.get("tool_errors", [])))
+    chunk_ids = list(outputs.get("chunk_ids", []))
+    rag_tool_chunk_ids = list(outputs.get("rag_tool_chunk_ids", outputs.get("tool_chunk_ids", [])))
+
+    if not should_have_rag_tool(str(route)):
+        return rag_tool_name is None and rag_tool_result_count == 0
+
+    return (
+        rag_tool_name == "rag_search_tool"
+        and rag_tool_result_count == len(chunk_ids)
+        and rag_tool_chunk_ids == chunk_ids
+        and not rag_tool_errors
+    )
+
+
+def score_drug_tool_contract(outputs: dict[str, Any]) -> bool:
+    route = outputs.get("actual_route")
+    drug_tool_name = outputs.get("drug_tool_name")
+    drug_tool_errors = list(outputs.get("drug_tool_errors", []))
+    drug_tool_status = outputs.get("drug_tool_status")
+
+    if not should_have_drug_tool(str(route)):
+        return drug_tool_name is None
+
+    return drug_tool_name == "drug_search_tool" and bool(drug_tool_status) and not drug_tool_errors
+
+
 def tool_contract_evaluator(outputs: dict[str, Any], reference_outputs: dict[str, Any]) -> dict[str, Any]:
     del reference_outputs
-    actual_route = outputs.get("actual_route")
-    should_have_tool_output = actual_route != "drug_search"
-    tool_name = outputs.get("tool_name")
-    tool_result_count = int(outputs.get("tool_result_count", 0))
-    tool_errors = list(outputs.get("tool_errors", []))
-    chunk_ids = list(outputs.get("chunk_ids", []))
-    tool_chunk_ids = list(outputs.get("tool_chunk_ids", []))
-
-    if not should_have_tool_output:
-        score = int(tool_name is None and tool_result_count == 0)
-    else:
-        score = int(
-            tool_name == "rag_search_tool"
-            and tool_result_count == len(chunk_ids)
-            and tool_chunk_ids == chunk_ids
-            and not tool_errors
-        )
+    rag_ok = score_rag_tool_contract(outputs)
+    drug_ok = score_drug_tool_contract(outputs)
+    score = int(rag_ok and drug_ok)
 
     return {
         "key": "tool_contract",
         "score": score,
         "comment": (
-            f"route={actual_route}, tool={tool_name}, "
-            f"tool_result_count={tool_result_count}, errors={len(tool_errors)}"
+            f"route={outputs.get('actual_route')}, "
+            f"rag_tool={outputs.get('rag_tool_name') or outputs.get('tool_name')}, "
+            f"drug_tool={outputs.get('drug_tool_name')}, rag_ok={rag_ok}, drug_ok={drug_ok}"
         ),
     }
 
@@ -137,12 +179,12 @@ def run_langsmith_graph_tool_eval(
             tool_contract_evaluator,
         ],
         experiment_prefix=f"graph-tool-top{top_k}-llm-{use_llm}",
-        description="LangGraph retrieval evaluated through rag_search_tool contract.",
+        description="LangGraph retrieval and drug search evaluated through tool contracts.",
         metadata={
             "top_k": top_k,
             "use_llm": use_llm,
             "runner": "langgraph",
-            "tool": "rag_search_tool",
+            "tools": ["rag_search_tool", "drug_search_tool"],
             "project": settings.langsmith_project,
         },
         client=resolved_client,

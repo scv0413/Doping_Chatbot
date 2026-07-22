@@ -2,10 +2,10 @@
 
 ## 목적
 
-LangGraph retrieve node가 `rag_search_tool`을 호출하도록 전환된 뒤, 검색 품질이 유지되는지와 tool contract가 지켜지는지를 평가한다.
+LangGraph retrieve node가 `rag_search_tool`을 호출하고, drug search node가 `drug_search_tool`을 호출하도록 전환된 뒤, 검색/약물조회 품질이 유지되는지와 tool contract가 지켜지는지를 평가한다.
 
 기존 graph retrieval eval은 최종 `retrieval_matches`만 평가했다.
-이번 tool eval은 그보다 한 단계 안쪽인 `rag_search_output`도 확인한다.
+이번 tool eval은 그보다 한 단계 안쪽인 `rag_search_output`과 `drug_search_tool_output`도 확인한다.
 
 ## 평가 대상
 
@@ -25,13 +25,19 @@ app/chat/evals/langsmith_tool_eval.py
 
 `build_graph_tool_target`은 기존 retrieval eval output에 다음 tool 관련 값을 추가한다.
 
-- `tool_name`
-- `tool_query`
-- `tool_top_k`
-- `tool_result_count`
-- `tool_errors`
-- `tool_source_ids`
-- `tool_chunk_ids`
+- `rag_tool_name`
+- `rag_tool_query`
+- `rag_tool_top_k`
+- `rag_tool_result_count`
+- `rag_tool_errors`
+- `rag_tool_source_ids`
+- `rag_tool_chunk_ids`
+- `drug_tool_name`
+- `drug_tool_query`
+- `drug_tool_status`
+- `drug_tool_matched_substances`
+- `drug_tool_prohibited_categories`
+- `drug_tool_errors`
 
 기존 evaluator와 호환되도록 다음 값도 유지한다.
 
@@ -47,18 +53,27 @@ app/chat/evals/langsmith_tool_eval.py
 
 `tool_contract_evaluator`는 다음을 확인한다.
 
-### RAG 또는 drug_search_with_rag route
+### rag route
 
-- `tool_name == "rag_search_tool"`
-- tool result 수와 final chunk 수가 같다.
-- `tool_chunk_ids == chunk_ids`
-- tool error가 없다.
+- `rag_tool_name == "rag_search_tool"`
+- RAG tool result 수와 final chunk 수가 같다.
+- `rag_tool_chunk_ids == chunk_ids`
+- RAG tool error가 없다.
+- Drug tool은 호출되지 않아야 한다.
 
-### drug_search only route
+### drug_search route
 
-- RAG tool이 호출되지 않아야 한다.
-- `tool_name is None`
-- `tool_result_count == 0`
+- `drug_tool_name == "drug_search_tool"`
+- `drug_tool_status`가 존재한다.
+- Drug tool error가 없다.
+- RAG tool은 호출되지 않아야 한다.
+
+### drug_search_with_rag route
+
+- `drug_search_tool`과 `rag_search_tool`이 모두 호출되어야 한다.
+- Drug tool은 status를 반환해야 한다.
+- RAG tool result와 final chunk가 일치해야 한다.
+- 두 tool 모두 error가 없어야 한다.
 
 ## 로컬 검증 결과
 
@@ -71,18 +86,18 @@ LangSmith 업로드 없이 `DEFAULT_CASES` 10개에 대해 로컬 target/evaluat
 
 케이스별 결과:
 
-| Case | Route | Tool | Tool Contract | Retrieval Quality |
-|---|---|---|---:|---:|
-| definition_s0 | rag | rag_search_tool | 1.0 | 1.0 |
-| drug_tylenol | drug_search | None | 1.0 | 1.0 |
-| drug_pseudoephedrine | drug_search_with_rag | rag_search_tool | 1.0 | 1.0 |
-| procedure_tue | rag | rag_search_tool | 1.0 | 1.0 |
-| field_dco_identity | rag | rag_search_tool | 1.0 | 1.0 |
-| field_night_blood | rag | rag_search_tool | 1.0 | 1.0 |
-| field_injury_delay | rag | rag_search_tool | 1.0 | 1.0 |
-| drug_nasal_spray | drug_search_with_rag | rag_search_tool | 1.0 | 1.0 |
-| field_leave_station | rag | rag_search_tool | 1.0 | 1.0 |
-| drug_half_life | rag | rag_search_tool | 1.0 | 1.0 |
+| Case | Route | RAG Tool | Drug Tool | Tool Contract | Retrieval Quality |
+|---|---|---|---|---:|---:|
+| definition_s0 | rag | rag_search_tool | None | 1.0 | 1.0 |
+| drug_tylenol | drug_search | None | drug_search_tool | 1.0 | 1.0 |
+| drug_pseudoephedrine | drug_search_with_rag | rag_search_tool | drug_search_tool | 1.0 | 1.0 |
+| procedure_tue | rag | rag_search_tool | None | 1.0 | 1.0 |
+| field_dco_identity | rag | rag_search_tool | None | 1.0 | 1.0 |
+| field_night_blood | rag | rag_search_tool | None | 1.0 | 1.0 |
+| field_injury_delay | rag | rag_search_tool | None | 1.0 | 1.0 |
+| drug_nasal_spray | drug_search_with_rag | rag_search_tool | drug_search_tool | 1.0 | 1.0 |
+| field_leave_station | rag | rag_search_tool | None | 1.0 | 1.0 |
+| drug_half_life | rag | rag_search_tool | None | 1.0 | 1.0 |
 
 ## LangSmith 실행 명령
 
@@ -100,7 +115,7 @@ uv run python -m app.chat.evals.langsmith_tool_eval --top-k 3
 
 ## 해석
 
-이번 결과는 LangGraph retrieve node가 `rag_search_tool`을 거치도록 변경된 뒤에도 기존 retrieval 품질이 유지되며, tool output과 최종 retrieval output이 일치한다는 근거다.
+이번 결과는 LangGraph retrieve node와 drug search node가 각각 tool을 거치도록 변경된 뒤에도 기존 retrieval 품질이 유지되며, route별 tool 호출 계약이 지켜진다는 근거다.
 
 이는 MCP 노출 전 중요한 기준선이다.
 MCP로 tool을 노출하기 전에 tool input/output contract가 내부 graph에서 먼저 안정적으로 검증되어야 하기 때문이다.
