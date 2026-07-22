@@ -556,3 +556,49 @@ uv run python -m app.chat.mcp.fastmcp_server
 주의:
 
 `MCPHTTPToolExecutor`는 현재 동기 graph runner에 맞춘 sync wrapper다. 이미 실행 중인 event loop 안에서는 사용하지 않도록 guard를 둔다. FastAPI async path에서 외부 MCP executor를 운영 기본값으로 쓰려면 async graph runner 또는 thread/offload 정책을 별도로 설계해야 한다.
+
+
+## MCP HTTP Timeout Retry Fallback 정책
+
+외부 MCP server 호출은 네트워크, 프로세스, endpoint 상태에 영향을 받는다. 따라서 graph가 외부 MCP transport에만 의존하면 MCP server 장애가 곧 chatbot 장애로 이어질 수 있다.
+
+정책:
+
+- `timeout_seconds`: MCP tool call 최대 대기 시간
+- `max_attempts`: 실패 시 재시도 횟수
+- `fallback_executor`: 모든 시도가 실패하면 내부 registry executor로 복구
+- 기본 fallback은 `execute_mcp_tool`
+- fallback을 끄고 싶으면 `fallback_executor=None`
+
+예시:
+
+```python
+from app.chat.graph.graph import run_chat_graph
+from app.chat.mcp.client_executor import MCPHTTPToolExecutor
+
+result = run_chat_graph(
+    "S0 비승인약물이 뭐야?",
+    top_k=3,
+    use_llm=False,
+    tool_executor=MCPHTTPToolExecutor(
+        timeout_seconds=5,
+        max_attempts=2,
+    ),
+)
+```
+
+장애 검증:
+
+- 없는 MCP endpoint `http://127.0.0.1:9999/mcp`로 실행
+- 내부 registry fallback으로 `match_count=3`, `errors=[]` 확인
+
+정상 검증:
+
+- 실제 MCP endpoint `http://127.0.0.1:8012/mcp`로 실행
+- `rag_search_tool`, `match_count=3`, `errors=[]` 확인
+
+운영 판단:
+
+- API/Gradio 기본값은 내부 registry executor 유지
+- 외부 MCP executor는 실험, 외부 agent 연동, MCP transport 검증용 옵션
+- async API path에서 sync `MCPHTTPToolExecutor`를 직접 쓰지 않도록 running event loop guard 유지

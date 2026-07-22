@@ -80,3 +80,84 @@ def test_mcp_http_tool_executor_rejects_running_event_loop(monkeypatch: pytest.M
 
     with pytest.raises(RuntimeError, match="cannot be used inside an already running event loop"):
         executor("rag_search_tool", {"query": "S0", "top_k": 3})
+
+
+async def failing_async_caller(url: str, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    del url, name, arguments
+    raise TimeoutError("mcp timeout")
+
+
+def test_mcp_http_tool_executor_retries_before_success() -> None:
+    calls = {"count": 0}
+
+    async def flaky_async_caller(url: str, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+        calls["count"] += 1
+        if calls["count"] == 1:
+            raise TimeoutError("first timeout")
+        return await fake_async_caller(url, name, arguments)
+
+    executor = MCPHTTPToolExecutor(
+        url="http://mcp.test/mcp",
+        async_caller=flaky_async_caller,
+        max_attempts=2,
+        fallback_executor=None,
+    )
+
+    output = executor("rag_search_tool", {"query": "S0", "top_k": 3})
+
+    assert calls["count"] == 2
+    assert output["tool_name"] == "rag_search_tool"
+    assert output["errors"] == []
+
+
+def test_mcp_http_tool_executor_falls_back_after_failed_attempts() -> None:
+    calls: list[tuple[str, dict[str, Any]]] = []
+
+    def fallback_executor(name, arguments, dependencies):
+        calls.append((name, arguments))
+        assert dependencies is not None
+        return {
+            "tool_name": name,
+            "query": arguments["query"],
+            "top_k": arguments["top_k"],
+            "results": [],
+            "errors": [],
+            "request_id": arguments.get("request_id"),
+        }
+
+    executor = MCPHTTPToolExecutor(
+        url="http://mcp.test/mcp",
+        async_caller=failing_async_caller,
+        max_attempts=2,
+        fallback_executor=fallback_executor,
+    )
+
+    output = executor("rag_search_tool", {"query": "S0", "top_k": 3}, dependencies=object())
+
+    assert calls == [("rag_search_tool", {"query": "S0", "top_k": 3})]
+    assert output["tool_name"] == "rag_search_tool"
+    assert output["errors"] == []
+
+
+def test_mcp_http_tool_executor_returns_error_payload_without_fallback() -> None:
+    executor = MCPHTTPToolExecutor(
+        url="http://mcp.test/mcp",
+        async_caller=failing_async_caller,
+        max_attempts=2,
+        fallback_executor=None,
+    )
+
+    output = executor("rag_search_tool", {"query": "S0", "top_k": 3})
+
+    assert output["tool_name"] == "rag_search_tool"
+    assert output["errors"][0]["stage"] == "mcp_http_client"
+    assert output["errors"][0]["error_type"] == "TimeoutError"
+    assert "2 attempt" in output["errors"][0]["message"]
+
+
+def test_mcp_http_tool_executor_validates_policy_values() -> None:
+    with pytest.raises(ValueError, match="timeout_seconds"):
+        MCPHTTPToolExecutor(timeout_seconds=0)
+
+    with pytest.raises(ValueError, match="max_attempts"):
+        MCPHTTPToolExecutor(max_attempts=0)
