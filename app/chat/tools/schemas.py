@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 
 from app.chat.drug_search.schemas import AdministrationRoute, CompetitionPeriod, DrugSearchResult
+from app.chat.pharmacology.schemas import PharmacologyInfoResult
 
 
 class ToolError(BaseModel):
@@ -56,6 +57,23 @@ class DrugSearchToolOutput(BaseModel):
     tool_name: str = "drug_search_tool"
     query: str
     result: DrugSearchResult | None = None
+    errors: list[ToolError] = Field(default_factory=list)
+    request_id: str | None = None
+
+    @property
+    def ok(self) -> bool:
+        return not self.errors
+
+
+class PharmacologyInfoToolRequest(BaseModel):
+    query: str = Field(min_length=1)
+    request_id: str | None = None
+
+
+class PharmacologyInfoToolOutput(BaseModel):
+    tool_name: str = "pharmacology_info_tool"
+    query: str
+    result: PharmacologyInfoResult | None = None
     errors: list[ToolError] = Field(default_factory=list)
     request_id: str | None = None
 

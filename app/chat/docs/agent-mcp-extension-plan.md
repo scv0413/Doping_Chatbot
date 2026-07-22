@@ -248,6 +248,9 @@ Agent 확장은 “LLM에게 마음대로 맡기는 것”이 아니다.
 - tool 단위 pytest 작성
 - 실제 Chroma index 기반 smoke 확인
 - deterministic fake searcher 기반 drug_search_tool smoke 확인
+- `PharmacologyInfoToolRequest`, `PharmacologyInfoToolOutput` schema 정의
+- `pharmacology_info_tool` 구현
+- pharmacology knowledge base 기반 local smoke 확인
 
 ## LangGraph 전환 반영 상태
 
@@ -283,4 +286,6 @@ search_input
 1. LangSmith tool trace 비교
 2. `rag_search_output`와 `drug_search_tool_output` 기반 tool eval 확장
 3. MCP server exposure 전 input/output schema 안정화
-4. `pharmacology_info_tool`, `field_response_tool` 순차 구현
+4. LangGraph pharmacology node에서 `pharmacology_info_tool` 호출로 점진 전환
+5. LangSmith tool eval에 pharmacology tool contract 추가
+6. `field_response_tool` 구현
