@@ -159,6 +159,18 @@ http://127.0.0.1:8012/mcp
 - `drug_search_tool`
 - `pharmacology_info_tool`
 
+별도 터미널에서 client smoke 검증:
+
+```bash
+uv run python scripts/mcp_smoke.py --call-pharmacology
+```
+
+검증 기준:
+
+- `missing_tools`가 빈 배열이어야 한다.
+- `ok`가 `true`여야 한다.
+- `pharmacology_call.structured_content.tool_name`이 `pharmacology_info_tool`이어야 한다.
+
 ## Docker
 
 Build:

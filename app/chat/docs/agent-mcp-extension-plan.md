@@ -426,5 +426,18 @@ uv run python -m app.chat.mcp.fastmcp_server
 
 - `FastMCP.list_tools()`는 시그니처상 일반 메서드처럼 보였지만 실제로 coroutine을 반환했다.
 - 테스트를 `asyncio.run(server.list_tools())`로 수정했다.
+- 전역 `python`에서는 `mcp` import가 실패했다. 프로젝트 실행 기준을 `uv run`으로 통일해 해결했다.
+
+실제 연결 검증:
+
+```bash
+uv run python -m app.chat.mcp.fastmcp_server
+uv run python scripts/mcp_smoke.py --call-pharmacology
+```
+
+검증 결과:
+
+- `rag_search_tool`, `drug_search_tool`, `pharmacology_info_tool`이 모두 MCP client에서 조회됐다.
+- `pharmacology_info_tool` 호출 결과가 structured content로 반환됐다.
 
 이 단계부터는 실제 MCP client/inspector가 연결할 수 있는 server entrypoint가 생겼다.
