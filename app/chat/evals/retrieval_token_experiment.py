@@ -7,9 +7,9 @@ from pathlib import Path
 from typing import Any
 
 from app.chat.pipeline.chat_pipeline import build_retrieval_query, normalize_pipeline_input
-from app.chat.retrieval.query_rewriter import rewrite_query
-from app.chat.retrieval.retriever import search
-from app.chat.retrieval.schemas import RetrievalMatch
+from app.chat.domain.retrieval.query_rewriter import rewrite_query
+from app.chat.domain.retrieval.retriever import search
+from app.chat.domain.retrieval.schemas import RetrievalMatch
 from app.chat.router.intent_router import ChatRoute, route_question
 from app.chat.evals.cases import DEFAULT_CASES, EvalCase
 

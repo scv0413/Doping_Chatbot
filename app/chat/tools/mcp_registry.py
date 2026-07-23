@@ -2,12 +2,12 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from app.chat.drug_search.kada_client import search_kada_drugs
-from app.chat.drug_search.schemas import DrugSearchInput, DrugSearchResult
-from app.chat.pharmacology.schemas import PharmacologyInfoResult
-from app.chat.pharmacology.service import search_pharmacology_info
-from app.chat.retrieval.retriever import search
-from app.chat.retrieval.schemas import RetrievalMatch
+from app.chat.domain.drug_search.kada_client import search_kada_drugs
+from app.chat.domain.drug_search.schemas import DrugSearchInput, DrugSearchResult
+from app.chat.domain.pharmacology.schemas import PharmacologyInfoResult
+from app.chat.domain.pharmacology.service import search_pharmacology_info
+from app.chat.domain.retrieval.retriever import search
+from app.chat.domain.retrieval.schemas import RetrievalMatch
 from app.chat.tools.drug_search_tool import run_drug_search_tool
 from app.chat.tools.mcp_schema import get_mcp_tool_definition, get_mcp_tool_definitions
 from app.chat.tools.pharmacology_info_tool import run_pharmacology_info_tool

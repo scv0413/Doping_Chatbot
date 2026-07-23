@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.chat.retrieval.schemas import RetrievalMatch, RetrievalMetadata
+from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
 from app.chat.tools import RagSearchRequest, run_rag_search_tool
 
 

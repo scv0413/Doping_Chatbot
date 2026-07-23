@@ -2,22 +2,22 @@ from collections.abc import Callable
 
 from pydantic import BaseModel, Field
 
-from app.chat.answer.chain import generate_answer
-from app.chat.answer.types import AnswerLLM
-from app.chat.drug_search.kada_client import search_kada_drugs
-from app.chat.pharmacology.schemas import PharmacologyInfoResult
-from app.chat.pharmacology.service import (
+from app.chat.domain.answer.chain import generate_answer
+from app.chat.domain.answer.types import AnswerLLM
+from app.chat.domain.drug_search.kada_client import search_kada_drugs
+from app.chat.domain.pharmacology.schemas import PharmacologyInfoResult
+from app.chat.domain.pharmacology.service import (
     search_pharmacology_info,
     should_run_pharmacology_info,
 )
-from app.chat.drug_search.schemas import (
+from app.chat.domain.drug_search.schemas import (
     DrugSearchInput,
     DrugSearchResult,
     build_needs_verification_result,
 )
-from app.chat.retrieval.query_rewriter import rewrite_query
-from app.chat.retrieval.retriever import search
-from app.chat.retrieval.schemas import RetrievalMatch
+from app.chat.domain.retrieval.query_rewriter import rewrite_query
+from app.chat.domain.retrieval.retriever import search
+from app.chat.domain.retrieval.schemas import RetrievalMatch
 from app.chat.router.intent_router import ChatRoute, RouteDecision, route_question
 from app.chat.tools.schemas import DrugSearchToolOutput, PharmacologyInfoToolOutput, RagSearchToolOutput
 

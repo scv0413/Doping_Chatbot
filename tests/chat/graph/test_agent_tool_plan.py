@@ -1,7 +1,7 @@
 from app.chat.agent import run_agent_tool_plan
-from app.chat.drug_search.schemas import DrugRiskStatus, DrugSearchInput, DrugSearchResult
-from app.chat.pharmacology.schemas import PharmacologyInfoResult, PharmacologyInfoStatus
-from app.chat.retrieval.schemas import RetrievalMatch, RetrievalMetadata
+from app.chat.domain.drug_search.schemas import DrugRiskStatus, DrugSearchInput, DrugSearchResult
+from app.chat.domain.pharmacology.schemas import PharmacologyInfoResult, PharmacologyInfoStatus
+from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
 from app.chat.tools import MCPToolDependencies
 
 

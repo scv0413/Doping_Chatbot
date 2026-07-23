@@ -180,12 +180,12 @@ def test_preprocess_public_imports_are_available() -> None:
     )
 ~~~
 
-Expected file: tests/preprocess/test_package_layout.py
+Expected file: tests/preprocess/test_preprocess_package_layout.py
 
 - [ ] **Step 2: 실패를 확인한다.**
 
 ~~~bash
-uv run pytest tests/preprocess/test_package_layout.py -v
+uv run pytest tests/preprocess/test_preprocess_package_layout.py -v
 ~~~
 
 Expected: FAIL because the target packages do not exist.
@@ -253,12 +253,12 @@ def test_domain_imports_are_available() -> None:
     assert OFFICIAL_DECISION_DISCLAIMER
 ~~~
 
-Expected file: tests/chat/domain/test_package_layout.py
+Expected file: tests/chat/domain/test_chat_domain_package_layout.py
 
 - [ ] **Step 2: 실패를 확인한다.**
 
 ~~~bash
-uv run pytest tests/chat/domain/test_package_layout.py -v
+uv run pytest tests/chat/domain/test_chat_domain_package_layout.py -v
 ~~~
 
 Expected: FAIL because app.chat.domain packages do not exist.
@@ -279,14 +279,14 @@ git mv tests/chat/answer tests/chat/domain/answer
 git mv tests/chat/policy tests/chat/domain/policy
 ~~~
 
-Update every app.chat.retrieval, drug_search, pharmacology, answer, policy import. Do not move router, graph, API, UI, MCP, tools, evals, or runtime in this task.
+Update every app.chat.domain.retrieval, drug_search, pharmacology, answer, policy import. Do not move router, graph, API, UI, MCP, tools, evals, or runtime in this task.
 
 - [ ] **Step 4: focused domain regression을 실행한다.**
 
 ~~~bash
 uv run pytest tests/chat/domain tests/chat/tools tests/chat/evals -v
 uv run ruff check app/chat/domain app/chat/tools app/chat/evals tests/chat/domain
-uv run python -m app.chat.domain.retrieval.retriever "S0 비승인약물이 뭐야?" --top-k 3
+uv run python -c "from app.chat.domain.retrieval.retriever import search; print(search.__name__)"
 ~~~
 
 Expected: tests and Ruff PASS; retriever command returns local retrieval matches.

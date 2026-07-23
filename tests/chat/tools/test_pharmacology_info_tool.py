@@ -1,4 +1,4 @@
-from app.chat.pharmacology.schemas import PharmacologyInfoResult, PharmacologyInfoStatus
+from app.chat.domain.pharmacology.schemas import PharmacologyInfoResult, PharmacologyInfoStatus
 from app.chat.tools import PharmacologyInfoToolRequest, run_pharmacology_info_tool
 
 

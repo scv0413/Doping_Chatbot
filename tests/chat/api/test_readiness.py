@@ -4,7 +4,7 @@ import chromadb
 
 from app.chat.api.readiness import build_readiness_response
 from app.core.config import settings
-from app.chat.retrieval.indexer import DEFAULT_CHUNK_FILE_NAMES
+from app.chat.domain.retrieval.indexer import DEFAULT_CHUNK_FILE_NAMES
 
 
 def test_readiness_reports_not_ready_when_chunk_files_are_missing(tmp_path: Path, monkeypatch) -> None:

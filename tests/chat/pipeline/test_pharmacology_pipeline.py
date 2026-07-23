@@ -1,6 +1,6 @@
-from app.chat.drug_search.schemas import DrugRiskStatus, DrugSearchInput, DrugSearchResult
+from app.chat.domain.drug_search.schemas import DrugRiskStatus, DrugSearchInput, DrugSearchResult
 from app.chat.pipeline.chat_pipeline import run_chat_pipeline
-from app.chat.retrieval.schemas import RetrievalMatch, RetrievalMetadata
+from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
 from app.chat.router.intent_router import ChatRoute
 
 

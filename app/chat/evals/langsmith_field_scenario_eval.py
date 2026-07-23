@@ -14,7 +14,7 @@ from app.chat.evals.field_scenario_cases import (
 )
 from app.chat.evals.langsmith_answer_eval import count_concept_hits, normalize_text
 from app.chat.pipeline.chat_pipeline import ChatPipelineResult, run_chat_pipeline
-from app.chat.policy.answer_policy import OFFICIAL_DECISION_DISCLAIMER, get_answer_rule
+from app.chat.domain.policy.answer_policy import OFFICIAL_DECISION_DISCLAIMER, get_answer_rule
 
 DATASET_NAME = "doping-chatbot-field-scenario-v1"
 DATASET_DESCRIPTION = "Field scenario answer evaluation cases for formatter and LLM chain comparison."

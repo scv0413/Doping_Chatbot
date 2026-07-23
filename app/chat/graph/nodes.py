@@ -2,12 +2,12 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from app.chat.answer.chain import generate_answer
+from app.chat.domain.answer.chain import generate_answer
 from app.chat.agent import build_agent_tool_plan
-from app.chat.answer.types import AnswerLLM
-from app.chat.drug_search.kada_client import search_kada_drugs
-from app.chat.drug_search.schemas import DrugSearchInput, build_needs_verification_result
-from app.chat.pharmacology.service import search_pharmacology_info, should_run_pharmacology_info
+from app.chat.domain.answer.types import AnswerLLM
+from app.chat.domain.drug_search.kada_client import search_kada_drugs
+from app.chat.domain.drug_search.schemas import DrugSearchInput, build_needs_verification_result
+from app.chat.domain.pharmacology.service import search_pharmacology_info, should_run_pharmacology_info
 from app.chat.pipeline.chat_pipeline import (
     DrugSearcher,
     PharmacologySearcher,
@@ -22,8 +22,8 @@ from app.chat.pipeline.chat_pipeline import (
     should_run_drug_search,
     should_run_retrieval,
 )
-from app.chat.retrieval.query_rewriter import rewrite_query
-from app.chat.retrieval.retriever import search
+from app.chat.domain.retrieval.query_rewriter import rewrite_query
+from app.chat.domain.retrieval.retriever import search
 from app.chat.router.intent_router import route_question
 from app.chat.tools.mcp_registry import MCPToolDependencies, execute_mcp_tool
 from app.chat.tools.rag_search_tool import tool_output_to_retrieval_matches

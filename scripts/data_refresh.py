@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 
-from app.chat.retrieval.indexer import index_chunks
+from app.chat.domain.retrieval.indexer import index_chunks
 from app.preprocess.transform.chunker import chunk_pages
 from app.preprocess.transform.preprocess import preprocess_manifest
 from app.preprocess.sources.inventory import (

@@ -1,7 +1,7 @@
 from collections.abc import Callable
 
-from app.chat.retrieval.retriever import search
-from app.chat.retrieval.schemas import RetrievalMatch, RetrievalMetadata
+from app.chat.domain.retrieval.retriever import search
+from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
 from app.chat.tools.schemas import RagSearchRequest, RagSearchResult, RagSearchToolOutput, ToolError
 
 RagRetriever = Callable[[str, int], list[RetrievalMatch]]

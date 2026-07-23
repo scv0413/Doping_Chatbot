@@ -5,8 +5,8 @@ import chromadb
 from pydantic import BaseModel, Field
 
 from app.core.config import settings
-from app.chat.retrieval.indexer import DEFAULT_CHUNK_FILE_NAMES
-from app.chat.retrieval.vector_store import get_chroma_persist_directory
+from app.chat.domain.retrieval.indexer import DEFAULT_CHUNK_FILE_NAMES
+from app.chat.domain.retrieval.vector_store import get_chroma_persist_directory
 
 
 class ReadinessCheck(BaseModel):
@@ -149,7 +149,7 @@ def check_runtime_import() -> ReadinessCheck:
 
 def check_runtime_policy_import() -> ReadinessCheck:
     try:
-        from app.chat.policy.runtime_policy import decide_runtime_policy  # noqa: PLC0415
+        from app.chat.domain.policy.runtime_policy import decide_runtime_policy  # noqa: PLC0415
     except Exception as exc:
         return ReadinessCheck(
             name="runtime_policy_import",

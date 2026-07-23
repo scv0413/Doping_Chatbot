@@ -1,8 +1,8 @@
 import pytest
 from pydantic import ValidationError
 
-from app.chat.drug_search.schemas import DrugSearchInput
-from app.chat.retrieval.schemas import RetrievalMatch, RetrievalMetadata
+from app.chat.domain.drug_search.schemas import DrugSearchInput
+from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
 from app.chat.runtime import ChatEngine, ChatRequest, ChatRuntimeDependencies, run_chat
 
 

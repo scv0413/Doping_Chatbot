@@ -22,8 +22,8 @@ from app.chat.evals.langsmith_retrieval_eval import (
 )
 from app.chat.evals.langsmith_tool_eval import tool_contract_evaluator
 from app.chat.evals.retrieval_token_experiment import build_eval_retrieval_query, should_retrieve
-from app.chat.pharmacology.service import should_run_pharmacology_info
-from app.chat.retrieval.query_rewriter import rewrite_query
+from app.chat.domain.pharmacology.service import should_run_pharmacology_info
+from app.chat.domain.retrieval.query_rewriter import rewrite_query
 from app.chat.router.intent_router import ChatRoute, route_question
 
 DEFAULT_TOP_K = 3

@@ -17,8 +17,8 @@ from app.chat.evals.langsmith_field_scenario_eval import (
     unsafe_action_evaluator,
 )
 from app.chat.pipeline.chat_pipeline import ChatPipelineResult
-from app.chat.policy.answer_policy import OFFICIAL_DECISION_DISCLAIMER
-from app.chat.retrieval.schemas import RetrievalMatch, RetrievalMetadata
+from app.chat.domain.policy.answer_policy import OFFICIAL_DECISION_DISCLAIMER
+from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
 from app.chat.router.intent_router import ChatRoute, RouteDecision
 
 

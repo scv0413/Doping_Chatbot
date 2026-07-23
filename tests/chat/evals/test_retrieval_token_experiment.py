@@ -6,7 +6,7 @@ from app.chat.evals.retrieval_token_experiment import (
     select_recommended_config,
     summarize_results,
 )
-from app.chat.retrieval.schemas import RetrievalMatch, RetrievalMetadata
+from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
 
 
 def fake_retriever(query: str, top_k: int) -> list[RetrievalMatch]:

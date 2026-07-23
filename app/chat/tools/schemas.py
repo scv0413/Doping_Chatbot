@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 
-from app.chat.drug_search.schemas import AdministrationRoute, CompetitionPeriod, DrugSearchResult
-from app.chat.pharmacology.schemas import PharmacologyInfoResult
+from app.chat.domain.drug_search.schemas import AdministrationRoute, CompetitionPeriod, DrugSearchResult
+from app.chat.domain.pharmacology.schemas import PharmacologyInfoResult
 
 
 class ToolError(BaseModel):

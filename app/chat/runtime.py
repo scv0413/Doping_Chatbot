@@ -3,8 +3,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from app.chat.answer.types import AnswerLLM
-from app.chat.drug_search.schemas import DrugSearchInput
+from app.chat.domain.answer.types import AnswerLLM
+from app.chat.domain.drug_search.schemas import DrugSearchInput
 from app.chat.graph.graph import run_chat_graph
 from app.chat.pipeline.chat_pipeline import (
     ChatPipelineResult,
@@ -15,7 +15,7 @@ from app.chat.pipeline.chat_pipeline import (
     Retriever,
     run_chat_pipeline,
 )
-from app.chat.policy.runtime_policy import RuntimePolicyDecision, RuntimeEngine, decide_runtime_policy
+from app.chat.domain.policy.runtime_policy import RuntimePolicyDecision, RuntimeEngine, decide_runtime_policy
 
 
 class ChatEngine(StrEnum):

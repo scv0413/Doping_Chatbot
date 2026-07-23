@@ -1,4 +1,4 @@
-from app.chat.drug_search.schemas import (
+from app.chat.domain.drug_search.schemas import (
     CompetitionPeriod,
     DrugRiskStatus,
     DrugSearchInput,
@@ -10,7 +10,7 @@ from app.chat.pipeline.chat_pipeline import (
     should_run_drug_search,
     should_run_retrieval,
 )
-from app.chat.retrieval.schemas import RetrievalMatch, RetrievalMetadata
+from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
 from app.chat.router.intent_router import ChatRoute, RouteDecision
 
 

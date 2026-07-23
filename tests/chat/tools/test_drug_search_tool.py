@@ -1,4 +1,4 @@
-from app.chat.drug_search.schemas import (
+from app.chat.domain.drug_search.schemas import (
     AdministrationRoute,
     CompetitionPeriod,
     DrugRiskStatus,

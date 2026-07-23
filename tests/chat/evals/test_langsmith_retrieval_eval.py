@@ -10,7 +10,7 @@ from app.chat.evals.langsmith_retrieval_eval import (
     term_hit_evaluator,
 )
 from app.chat.evals.retrieval_token_experiment import ExperimentConfig
-from app.chat.retrieval.schemas import RetrievalMatch, RetrievalMetadata
+from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
 
 
 def fake_retriever(query: str, top_k: int) -> list[RetrievalMatch]:

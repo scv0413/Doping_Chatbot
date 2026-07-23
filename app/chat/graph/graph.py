@@ -2,8 +2,8 @@ from typing import Any, cast
 
 from langgraph.graph import END, START, StateGraph
 
-from app.chat.answer.types import AnswerLLM
-from app.chat.drug_search.schemas import DrugSearchInput
+from app.chat.domain.answer.types import AnswerLLM
+from app.chat.domain.drug_search.schemas import DrugSearchInput
 from app.chat.pipeline.chat_pipeline import (
     ChatPipelineResult,
     DrugSearcher,

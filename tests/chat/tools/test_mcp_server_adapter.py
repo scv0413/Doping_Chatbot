@@ -1,6 +1,6 @@
-from app.chat.drug_search.schemas import DrugSearchInput, DrugSearchResult, DrugRiskStatus
+from app.chat.domain.drug_search.schemas import DrugSearchInput, DrugSearchResult, DrugRiskStatus
 from app.chat.mcp import call_tool, list_tools
-from app.chat.retrieval.schemas import RetrievalMatch, RetrievalMetadata
+from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
 from app.chat.tools import MCPToolDependencies
 
 

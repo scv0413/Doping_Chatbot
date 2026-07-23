@@ -1,7 +1,7 @@
 from collections.abc import Callable
 
-from app.chat.drug_search.kada_client import search_kada_drugs
-from app.chat.drug_search.schemas import DrugSearchInput, DrugSearchResult
+from app.chat.domain.drug_search.kada_client import search_kada_drugs
+from app.chat.domain.drug_search.schemas import DrugSearchInput, DrugSearchResult
 from app.chat.tools.schemas import DrugSearchToolOutput, DrugSearchToolRequest, ToolError
 
 DrugSearcher = Callable[[DrugSearchInput], DrugSearchResult]

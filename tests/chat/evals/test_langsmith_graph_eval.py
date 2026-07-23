@@ -1,7 +1,7 @@
-from app.chat.drug_search.schemas import DrugSearchInput
+from app.chat.domain.drug_search.schemas import DrugSearchInput
 from app.chat.evals.langsmith_graph_eval import build_graph_retrieval_target
 from app.chat.pipeline.chat_pipeline import ChatPipelineResult
-from app.chat.retrieval.schemas import RetrievalMatch, RetrievalMetadata
+from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
 from app.chat.router.intent_router import ChatRoute, RouteDecision
 
 

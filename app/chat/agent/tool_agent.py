@@ -2,8 +2,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from app.chat.drug_search.schemas import DrugSearchResult
-from app.chat.pharmacology.service import should_run_pharmacology_info
+from app.chat.domain.drug_search.schemas import DrugSearchResult
+from app.chat.domain.pharmacology.service import should_run_pharmacology_info
 from app.chat.pipeline.chat_pipeline import (
     QueryRewriter,
     build_retrieval_query,
@@ -11,7 +11,7 @@ from app.chat.pipeline.chat_pipeline import (
     should_run_drug_search,
     should_run_retrieval,
 )
-from app.chat.retrieval.query_rewriter import rewrite_query
+from app.chat.domain.retrieval.query_rewriter import rewrite_query
 from app.chat.router.intent_router import RouteDecision, route_question
 from app.chat.tools.mcp_registry import MCPToolDependencies, execute_mcp_tool
 

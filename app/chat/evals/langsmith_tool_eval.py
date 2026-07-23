@@ -16,9 +16,9 @@ from app.chat.evals.langsmith_retrieval_eval import (
     upsert_dataset_examples,
 )
 from app.chat.graph.graph import run_chat_graph
-from app.chat.pharmacology.service import should_run_pharmacology_info
+from app.chat.domain.pharmacology.service import should_run_pharmacology_info
 from app.chat.pipeline.chat_pipeline import ChatPipelineResult
-from app.chat.retrieval.query_rewriter import rewrite_query
+from app.chat.domain.retrieval.query_rewriter import rewrite_query
 
 DEFAULT_TOP_K = 3
 GraphRunner = Callable[..., ChatPipelineResult]

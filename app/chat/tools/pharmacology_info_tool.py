@@ -1,7 +1,7 @@
 from collections.abc import Callable
 
-from app.chat.pharmacology.schemas import PharmacologyInfoResult
-from app.chat.pharmacology.service import search_pharmacology_info
+from app.chat.domain.pharmacology.schemas import PharmacologyInfoResult
+from app.chat.domain.pharmacology.service import search_pharmacology_info
 from app.chat.tools.schemas import PharmacologyInfoToolOutput, PharmacologyInfoToolRequest, ToolError
 
 PharmacologySearcher = Callable[[str], PharmacologyInfoResult]

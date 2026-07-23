@@ -1,4 +1,4 @@
-from app.chat.drug_search.schemas import (
+from app.chat.domain.drug_search.schemas import (
     DrugRiskStatus,
     DrugSearchInput,
     DrugSearchResult,
@@ -22,14 +22,14 @@ from app.chat.evals.langsmith_half_life_eval import (
     safety_caveat_evaluator,
     source_presence_evaluator,
 )
-from app.chat.pharmacology.schemas import (
+from app.chat.domain.pharmacology.schemas import (
     HalfLifeInfo,
     PharmacologyInfoResult,
     PharmacologyInfoStatus,
     PharmacologySource,
 )
 from app.chat.pipeline.chat_pipeline import ChatPipelineResult
-from app.chat.retrieval.schemas import RetrievalMatch, RetrievalMetadata
+from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
 from app.chat.router.intent_router import ChatRoute, RouteDecision
 
 

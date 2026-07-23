@@ -26,7 +26,7 @@ LANGSMITH_PROJECT=doping-chatbot
 ```bash
 uv run python -m app.preprocess.transform.preprocess
 uv run python -m app.preprocess.transform.chunker
-uv run python -m app.chat.retrieval.indexer
+uv run python -m app.chat.domain.retrieval.indexer
 ```
 
 이미 `data/processed`와 `data/indexes`가 준비되어 있으면 생략할 수 있다.

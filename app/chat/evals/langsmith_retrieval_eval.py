@@ -16,9 +16,9 @@ from app.chat.evals.retrieval_token_experiment import (
     score_result,
     should_retrieve,
 )
-from app.chat.retrieval.query_rewriter import rewrite_query
-from app.chat.retrieval.retriever import search
-from app.chat.retrieval.schemas import RetrievalMatch
+from app.chat.domain.retrieval.query_rewriter import rewrite_query
+from app.chat.domain.retrieval.retriever import search
+from app.chat.domain.retrieval.schemas import RetrievalMatch
 from app.chat.router.intent_router import route_question
 
 DATASET_NAME = "doping-chatbot-retrieval-v1"

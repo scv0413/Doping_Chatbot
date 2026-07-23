@@ -91,7 +91,7 @@ uv run python -m app.preprocess.transform.chunker
 색인:
 
 ```bash
-uv run python -m app.chat.retrieval.indexer
+uv run python -m app.chat.domain.retrieval.indexer
 
 Source 변경 audit 및 안전한 전체 재색인:
 
@@ -105,8 +105,8 @@ uv run python scripts/data_refresh.py --apply
 검색 확인:
 
 ```bash
-uv run python -m app.chat.retrieval.retriever "슈도에페드린 경기기간" --top-k 3
-uv run python -m app.chat.retrieval.retrieval_inspector
+uv run python -m app.chat.domain.retrieval.retriever "슈도에페드린 경기기간" --top-k 3
+uv run python -m app.chat.domain.retrieval.retrieval_inspector
 ```
 
 ## Run Locally
