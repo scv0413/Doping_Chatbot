@@ -84,6 +84,14 @@ DEFAULT_CASES = [
         expected_sources=("field_response_manual", "wada_prohibited_list_2026_ko"),
         must_include_terms=("반감기", "경기기간"),
     ),
+    EvalCase(
+        case_id="isti_2023_interpreter_notification_en",
+        query="When should an interpreter or third party be notified before athlete notification?",
+        expected_route="rag",
+        expected_sources=("wada_isti_2023_en",),
+        must_include_terms=("interpreter", "third party"),
+        retrieval_terms=("Article 5.3.7", "interpreter", "third party", "notification"),
+    ),
 ]
 
 

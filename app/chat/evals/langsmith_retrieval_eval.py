@@ -65,11 +65,31 @@ def upsert_dataset_examples(
     dataset_name: str = DATASET_NAME,
     cases: list[EvalCase] | None = None,
 ) -> object:
-    get_or_create_dataset(client=client, dataset_name=dataset_name)
-    return client.create_examples(
-        dataset_name=dataset_name,
-        examples=build_langsmith_examples(cases),
-    )
+    dataset = get_or_create_dataset(client=client, dataset_name=dataset_name)
+    existing_examples = {
+        str(example.metadata.get("case_id")): example.id
+        for example in client.list_examples(dataset_id=getattr(dataset, "id", None))
+        if isinstance(example.metadata, dict) and example.metadata.get("case_id")
+    }
+
+    for example in build_langsmith_examples(cases):
+        case_id = str(example["metadata"]["case_id"])
+        existing_id = existing_examples.get(case_id)
+        if existing_id is None:
+            client.create_examples(
+                dataset_id=getattr(dataset, "id", None),
+                examples=[example],
+            )
+            continue
+
+        client.update_example(
+            example_id=existing_id,
+            inputs=example["inputs"],
+            outputs=example["outputs"],
+            metadata=example["metadata"],
+            dataset_id=getattr(dataset, "id", None),
+        )
+    return None
 
 
 def build_retrieval_target(

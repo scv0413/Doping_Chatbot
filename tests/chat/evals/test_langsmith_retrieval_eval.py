@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 from app.chat.evals.cases import DEFAULT_CASES, case_to_inputs, case_to_outputs, find_case
 from app.chat.evals.langsmith_retrieval_eval import (
     build_example_id,
@@ -8,6 +10,7 @@ from app.chat.evals.langsmith_retrieval_eval import (
     route_match_evaluator,
     source_hit_evaluator,
     term_hit_evaluator,
+    upsert_dataset_examples,
 )
 from app.chat.evals.retrieval_token_experiment import ExperimentConfig
 from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
@@ -35,6 +38,39 @@ def test_cases_convert_to_langsmith_io() -> None:
 
     assert case_to_inputs(case)["query"] == "S0 비승인약물이 뭐야?"
     assert case_to_outputs(case)["expected_route"] == "rag"
+
+
+class FakeRetrievalEvalClient:
+    def __init__(self) -> None:
+        self.updated: list[dict] = []
+        self.created: list[dict] = []
+
+    def read_dataset(self, dataset_name: str) -> SimpleNamespace:
+        assert dataset_name == "test-retrieval-dataset"
+        return SimpleNamespace(id="dataset-id")
+
+    def list_examples(self, dataset_id: str):
+        assert dataset_id == "dataset-id"
+        return iter([SimpleNamespace(id="remote-definition-s0", metadata={"case_id": "definition_s0"})])
+
+    def update_example(self, example_id: str, **kwargs) -> None:
+        self.updated.append({"example_id": example_id, **kwargs})
+
+    def create_examples(self, **kwargs) -> None:
+        self.created.append(kwargs)
+
+
+def test_upsert_dataset_examples_creates_new_case_without_missing_id_update() -> None:
+    client = FakeRetrievalEvalClient()
+    cases = [
+        DEFAULT_CASES[0],
+        find_case("isti_2023_interpreter_notification_en"),
+    ]
+
+    upsert_dataset_examples(client=client, dataset_name="test-retrieval-dataset", cases=cases)
+
+    assert client.updated[0]["example_id"] == "remote-definition-s0"
+    assert client.created[0]["examples"][0]["metadata"]["case_id"] == "isti_2023_interpreter_notification_en"
 
 
 def test_build_langsmith_examples_has_stable_ids() -> None:
