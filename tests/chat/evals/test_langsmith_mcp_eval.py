@@ -7,7 +7,7 @@ from app.chat.evals.langsmith_mcp_eval import (
     run_mcp_eval_case,
 )
 from app.chat.evals.langsmith_tool_eval import tool_contract_evaluator
-from app.chat.router.intent_router import ChatRoute
+from app.chat.orchestration.router.intent_router import ChatRoute
 
 
 async def fake_sequence_runner(url: str, tool_calls: list[tuple[str, dict[str, Any]]]) -> dict[str, Any]:

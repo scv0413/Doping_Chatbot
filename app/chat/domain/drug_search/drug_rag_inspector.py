@@ -2,7 +2,7 @@ from app.chat.domain.answer.formatter import format_answer
 from app.chat.domain.drug_search.formatter import format_drug_search_answer
 from app.chat.domain.drug_search.kada_client import search_kada_drugs
 from app.chat.domain.drug_search.schemas import CompetitionPeriod, DrugSearchInput
-from app.chat.pipeline.chat_pipeline import (
+from app.chat.orchestration.pipeline.chat_pipeline import (
     build_retrieval_query,
     run_chat_pipeline,
     should_run_drug_search,
@@ -11,7 +11,7 @@ from app.chat.pipeline.chat_pipeline import (
 from app.chat.domain.retrieval.query_rewriter import rewrite_query
 from app.chat.domain.retrieval.retriever import search
 from app.chat.domain.retrieval.schemas import RetrievalMatch
-from app.chat.router.intent_router import route_question
+from app.chat.orchestration.router.intent_router import route_question
 
 TEST_INPUTS = [
     DrugSearchInput(

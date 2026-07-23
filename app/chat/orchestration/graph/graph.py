@@ -4,7 +4,7 @@ from langgraph.graph import END, START, StateGraph
 
 from app.chat.domain.answer.types import AnswerLLM
 from app.chat.domain.drug_search.schemas import DrugSearchInput
-from app.chat.pipeline.chat_pipeline import (
+from app.chat.orchestration.pipeline.chat_pipeline import (
     ChatPipelineResult,
     DrugSearcher,
     PharmacologySearcher,
@@ -12,7 +12,7 @@ from app.chat.pipeline.chat_pipeline import (
     QuestionRouter,
     Retriever,
 )
-from app.chat.graph.nodes import (
+from app.chat.orchestration.graph.nodes import (
     ChatGraphDependencies,
     GraphToolExecutor,
     build_agent_plan_node,
@@ -29,9 +29,11 @@ from app.chat.graph.nodes import (
     next_after_route,
     retry_rewrite_node,
 )
-from app.chat.graph.state import ChatGraphState
+from app.chat.orchestration.graph.state import ChatGraphState
 
-DEFAULT_RECURSION_LIMIT = 12
+from app.core.config import DEFAULT_GRAPH_RECURSION_LIMIT
+
+DEFAULT_RECURSION_LIMIT = DEFAULT_GRAPH_RECURSION_LIMIT
 
 
 def compile_chat_graph(dependencies: ChatGraphDependencies | None = None) -> Any:

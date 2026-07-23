@@ -1,8 +1,8 @@
 from app.chat.domain.drug_search.schemas import DrugSearchInput
 from app.chat.evals.langsmith_graph_eval import build_graph_retrieval_target
-from app.chat.pipeline.chat_pipeline import ChatPipelineResult
+from app.chat.orchestration.pipeline.chat_pipeline import ChatPipelineResult
 from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
-from app.chat.router.intent_router import ChatRoute, RouteDecision
+from app.chat.orchestration.router.intent_router import ChatRoute, RouteDecision
 
 
 def fake_graph_runner(query: str, top_k: int, use_llm: bool, query_rewriter) -> ChatPipelineResult:

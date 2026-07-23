@@ -5,8 +5,8 @@ from pydantic import BaseModel, Field
 
 from app.chat.domain.answer.types import AnswerLLM
 from app.chat.domain.drug_search.schemas import DrugSearchInput
-from app.chat.graph.graph import run_chat_graph
-from app.chat.pipeline.chat_pipeline import (
+from app.chat.orchestration.graph.graph import run_chat_graph
+from app.chat.orchestration.pipeline.chat_pipeline import (
     ChatPipelineResult,
     DrugSearcher,
     PharmacologySearcher,

@@ -16,10 +16,10 @@ from app.chat.evals.langsmith_field_scenario_eval import (
     safety_disclaimer_evaluator,
     unsafe_action_evaluator,
 )
-from app.chat.pipeline.chat_pipeline import ChatPipelineResult
+from app.chat.orchestration.pipeline.chat_pipeline import ChatPipelineResult
 from app.chat.domain.policy.answer_policy import OFFICIAL_DECISION_DISCLAIMER
 from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
-from app.chat.router.intent_router import ChatRoute, RouteDecision
+from app.chat.orchestration.router.intent_router import ChatRoute, RouteDecision
 
 
 def fake_field_pipeline_runner(query: str, top_k: int, use_llm: bool) -> ChatPipelineResult:

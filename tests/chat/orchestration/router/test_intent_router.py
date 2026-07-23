@@ -1,4 +1,4 @@
-from app.chat.router.intent_router import ChatRoute, route_question
+from app.chat.orchestration.router.intent_router import ChatRoute, route_question
 
 
 def test_routes_product_name_question_to_drug_search() -> None:

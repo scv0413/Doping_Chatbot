@@ -12,7 +12,7 @@ from app.chat.evals.answer_cases import (
     answer_case_to_inputs,
     answer_case_to_outputs,
 )
-from app.chat.pipeline.chat_pipeline import ChatPipelineResult, run_chat_pipeline
+from app.chat.orchestration.pipeline.chat_pipeline import ChatPipelineResult, run_chat_pipeline
 from app.chat.domain.policy.answer_policy import OFFICIAL_DECISION_DISCLAIMER, get_answer_rule
 
 DATASET_NAME = "doping-chatbot-answer-v1"

@@ -12,7 +12,7 @@ from app.chat.domain.policy.answer_policy import (
 from app.chat.domain.drug_search.schemas import DrugSearchResult
 from app.chat.domain.pharmacology.schemas import PharmacologyInfoResult
 from app.chat.domain.retrieval.schemas import RetrievalMatch
-from app.chat.router.intent_router import RouteDecision
+from app.chat.orchestration.router.intent_router import RouteDecision
 
 
 DEFAULT_MAX_PROMPT_TOKENS = 6000

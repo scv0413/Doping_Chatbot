@@ -54,7 +54,7 @@ START
 uv run ruff check app tests
 uv run pytest tests/chat/graph/test_chat_graph.py
 uv run pytest
-uv run python -m app.chat.graph.graph_inspector '도핑 검사관 신분이 불분명하면 어떻게 확인해야 해?' --no-llm
+uv run python -m app.chat.orchestration.graph.graph_inspector '도핑 검사관 신분이 불분명하면 어떻게 확인해야 해?' --no-llm
 ```
 
 결과:

@@ -1,4 +1,4 @@
-from app.chat.agent import run_agent_tool_plan
+from app.chat.orchestration.agent import run_agent_tool_plan
 from app.chat.domain.drug_search.schemas import DrugRiskStatus, DrugSearchInput, DrugSearchResult
 from app.chat.domain.pharmacology.schemas import PharmacologyInfoResult, PharmacologyInfoStatus
 from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
@@ -88,9 +88,9 @@ def test_agent_tool_plan_calls_drug_pharmacology_and_rag_for_half_life_drug_ques
 
 
 def test_agent_tool_plan_declares_order_before_execution() -> None:
-    from app.chat.agent import build_agent_tool_plan
-    from app.chat.pipeline.chat_pipeline import normalize_pipeline_input
-    from app.chat.router.intent_router import route_question
+    from app.chat.orchestration.agent import build_agent_tool_plan
+    from app.chat.orchestration.pipeline.chat_pipeline import normalize_pipeline_input
+    from app.chat.orchestration.router.intent_router import route_question
 
     search_input = normalize_pipeline_input("슈도에페드린 반감기가 얼마나 돼? 경기 전날 먹었으면 괜찮아?")
     plan = build_agent_tool_plan(search_input, route_question(search_input.query))

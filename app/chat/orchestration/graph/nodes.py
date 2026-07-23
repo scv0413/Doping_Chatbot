@@ -3,12 +3,12 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.chat.domain.answer.chain import generate_answer
-from app.chat.agent import build_agent_tool_plan
+from app.chat.orchestration.agent import build_agent_tool_plan
 from app.chat.domain.answer.types import AnswerLLM
 from app.chat.domain.drug_search.kada_client import search_kada_drugs
 from app.chat.domain.drug_search.schemas import DrugSearchInput, build_needs_verification_result
 from app.chat.domain.pharmacology.service import search_pharmacology_info, should_run_pharmacology_info
-from app.chat.pipeline.chat_pipeline import (
+from app.chat.orchestration.pipeline.chat_pipeline import (
     DrugSearcher,
     PharmacologySearcher,
     PipelineError,
@@ -24,7 +24,7 @@ from app.chat.pipeline.chat_pipeline import (
 )
 from app.chat.domain.retrieval.query_rewriter import rewrite_query
 from app.chat.domain.retrieval.retriever import search
-from app.chat.router.intent_router import route_question
+from app.chat.orchestration.router.intent_router import route_question
 from app.chat.tools.mcp_registry import MCPToolDependencies, execute_mcp_tool
 from app.chat.tools.rag_search_tool import tool_output_to_retrieval_matches
 from app.chat.tools.schemas import (
@@ -36,7 +36,7 @@ from app.chat.tools.schemas import (
     RagSearchToolOutput,
     ToolError,
 )
-from app.chat.graph.state import ChatGraphState
+from app.chat.orchestration.graph.state import ChatGraphState
 
 DEFAULT_TOP_K = 3
 MAX_RETRIEVAL_ATTEMPTS = 2

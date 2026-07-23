@@ -2,7 +2,7 @@ from typing import Any
 
 import pytest
 
-from app.chat.graph.nodes import ChatGraphDependencies, build_retrieve_node, build_rewrite_node, build_route_node
+from app.chat.orchestration.graph.nodes import ChatGraphDependencies, build_retrieve_node, build_rewrite_node, build_route_node
 from app.chat.mcp.client_executor import MCPHTTPToolExecutor, build_mcp_client_error_payload
 
 

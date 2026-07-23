@@ -11,7 +11,7 @@ from app.chat.domain.drug_search.schemas import (
     DrugSearchResult,
 )
 from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
-from app.chat.router.intent_router import ChatRoute, RouteDecision
+from app.chat.orchestration.router.intent_router import ChatRoute, RouteDecision
 from app.chat.domain.policy.answer_policy import OFFICIAL_DECISION_DISCLAIMER
 
 

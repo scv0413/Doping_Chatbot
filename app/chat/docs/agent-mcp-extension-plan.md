@@ -529,7 +529,7 @@ Graph 기본 실행은 내부 registry executor를 유지하되, 실제 MCP stre
 사용 예:
 
 ```python
-from app.chat.graph.graph import run_chat_graph
+from app.chat.orchestration.graph.graph import run_chat_graph
 from app.chat.mcp.client_executor import MCPHTTPToolExecutor
 
 result = run_chat_graph(
@@ -573,7 +573,7 @@ uv run python -m app.chat.mcp.fastmcp_server
 예시:
 
 ```python
-from app.chat.graph.graph import run_chat_graph
+from app.chat.orchestration.graph.graph import run_chat_graph
 from app.chat.mcp.client_executor import MCPHTTPToolExecutor
 
 result = run_chat_graph(

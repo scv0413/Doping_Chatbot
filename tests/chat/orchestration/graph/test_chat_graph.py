@@ -1,6 +1,6 @@
 from app.chat.domain.drug_search.schemas import DrugRiskStatus, DrugSearchInput, DrugSearchResult
-from app.chat.graph.graph import run_chat_graph
-from app.chat.graph.nodes import (
+from app.chat.orchestration.graph.graph import run_chat_graph
+from app.chat.orchestration.graph.nodes import (
     ChatGraphDependencies,
     build_answer_node,
     build_drug_search_node,
@@ -8,9 +8,9 @@ from app.chat.graph.nodes import (
     build_rewrite_node,
     build_route_node,
 )
-from app.chat.pipeline.chat_pipeline import run_chat_pipeline
+from app.chat.orchestration.pipeline.chat_pipeline import run_chat_pipeline
 from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
-from app.chat.router.intent_router import ChatRoute
+from app.chat.orchestration.router.intent_router import ChatRoute
 
 
 def fake_drug_searcher(search_input: DrugSearchInput) -> DrugSearchResult:

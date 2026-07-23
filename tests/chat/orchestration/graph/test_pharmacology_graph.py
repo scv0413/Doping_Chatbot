@@ -1,8 +1,8 @@
 from app.chat.domain.drug_search.schemas import DrugRiskStatus, DrugSearchInput, DrugSearchResult
-from app.chat.graph.graph import run_chat_graph
+from app.chat.orchestration.graph.graph import run_chat_graph
 from app.chat.domain.pharmacology.schemas import PharmacologyInfoResult
 from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
-from app.chat.router.intent_router import ChatRoute
+from app.chat.orchestration.router.intent_router import ChatRoute
 
 
 def fake_drug_searcher(search_input: DrugSearchInput) -> DrugSearchResult:

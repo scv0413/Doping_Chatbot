@@ -1,11 +1,11 @@
 from typing import NotRequired, TypedDict
 
 from app.chat.domain.drug_search.schemas import DrugSearchInput, DrugSearchResult
-from app.chat.agent import AgentToolPlan
+from app.chat.orchestration.agent import AgentToolPlan
 from app.chat.domain.pharmacology.schemas import PharmacologyInfoResult
-from app.chat.pipeline.chat_pipeline import PipelineError
+from app.chat.orchestration.pipeline.chat_pipeline import PipelineError
 from app.chat.domain.retrieval.schemas import RetrievalMatch
-from app.chat.router.intent_router import RouteDecision
+from app.chat.orchestration.router.intent_router import RouteDecision
 from app.chat.tools.schemas import DrugSearchToolOutput, PharmacologyInfoToolOutput, RagSearchToolOutput
 
 

@@ -44,4 +44,7 @@ class Settings(BaseSettings):
     )
 
 
+DEFAULT_GRAPH_RECURSION_LIMIT = 12
+
+
 settings = Settings()

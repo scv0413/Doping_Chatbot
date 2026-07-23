@@ -1,6 +1,6 @@
 import argparse
 
-from app.chat.graph.graph import run_chat_graph
+from app.chat.orchestration.graph.graph import run_chat_graph
 
 
 def main() -> None:

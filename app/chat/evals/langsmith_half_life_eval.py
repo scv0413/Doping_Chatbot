@@ -13,7 +13,7 @@ from app.chat.evals.half_life_cases import (
     half_life_case_to_inputs,
     half_life_case_to_outputs,
 )
-from app.chat.pipeline.chat_pipeline import ChatPipelineResult, run_chat_pipeline
+from app.chat.orchestration.pipeline.chat_pipeline import ChatPipelineResult, run_chat_pipeline
 
 DATASET_NAME = "doping-chatbot-half-life-v1"
 DATASET_DESCRIPTION = "Half-life and pharmacology answer safety evaluation cases."

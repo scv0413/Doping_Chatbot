@@ -19,7 +19,7 @@ from app.chat.evals.retrieval_token_experiment import (
 from app.chat.domain.retrieval.query_rewriter import rewrite_query
 from app.chat.domain.retrieval.retriever import search
 from app.chat.domain.retrieval.schemas import RetrievalMatch
-from app.chat.router.intent_router import route_question
+from app.chat.orchestration.router.intent_router import route_question
 
 DATASET_NAME = "doping-chatbot-retrieval-v1"
 DATASET_DESCRIPTION = "Retrieval-only evaluation cases for the doping chatbot."

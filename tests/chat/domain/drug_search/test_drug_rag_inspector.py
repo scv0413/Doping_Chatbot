@@ -5,7 +5,7 @@ from app.chat.domain.drug_search.schemas import (
     DrugSearchInput,
     DrugSearchResult,
 )
-from app.chat.router.intent_router import ChatRoute, RouteDecision
+from app.chat.orchestration.router.intent_router import ChatRoute, RouteDecision
 
 
 def test_build_retrieval_query_does_not_add_drug_terms_for_rag_only_route() -> None:

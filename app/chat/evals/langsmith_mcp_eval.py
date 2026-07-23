@@ -24,7 +24,7 @@ from app.chat.evals.langsmith_tool_eval import tool_contract_evaluator
 from app.chat.evals.retrieval_token_experiment import build_eval_retrieval_query, should_retrieve
 from app.chat.domain.pharmacology.service import should_run_pharmacology_info
 from app.chat.domain.retrieval.query_rewriter import rewrite_query
-from app.chat.router.intent_router import ChatRoute, route_question
+from app.chat.orchestration.router.intent_router import ChatRoute, route_question
 
 DEFAULT_TOP_K = 3
 DEFAULT_MCP_URL = "http://127.0.0.1:8012/mcp"

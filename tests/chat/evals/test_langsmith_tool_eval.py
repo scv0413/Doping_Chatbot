@@ -1,9 +1,9 @@
 from app.chat.domain.drug_search.schemas import DrugRiskStatus, DrugSearchInput, DrugSearchResult
 from app.chat.evals.langsmith_tool_eval import build_graph_tool_target, tool_contract_evaluator
 from app.chat.domain.pharmacology.schemas import HalfLifeInfo, PharmacologyInfoResult, PharmacologyInfoStatus
-from app.chat.pipeline.chat_pipeline import ChatPipelineResult
+from app.chat.orchestration.pipeline.chat_pipeline import ChatPipelineResult
 from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
-from app.chat.router.intent_router import ChatRoute, RouteDecision
+from app.chat.orchestration.router.intent_router import ChatRoute, RouteDecision
 from app.chat.tools.schemas import (
     DrugSearchToolOutput,
     PharmacologyInfoToolOutput,

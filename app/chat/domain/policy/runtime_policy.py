@@ -1,8 +1,8 @@
 from enum import StrEnum
 from pydantic import BaseModel, Field
 
-from app.chat.graph.graph import DEFAULT_RECURSION_LIMIT
-from app.chat.router.intent_router import ChatRoute, route_question
+from app.core.config import DEFAULT_GRAPH_RECURSION_LIMIT
+from app.chat.orchestration.router.intent_router import ChatRoute, route_question
 
 DEFAULT_TOP_K = 3
 MAX_TOP_K = 10
@@ -17,7 +17,7 @@ class RuntimePolicyDecision(BaseModel):
     top_k: int = Field(default=DEFAULT_TOP_K, ge=1, le=MAX_TOP_K)
     use_llm: bool = False
     engine: RuntimeEngine = RuntimeEngine.GRAPH
-    recursion_limit: int = Field(default=DEFAULT_RECURSION_LIMIT, ge=1, le=50)
+    recursion_limit: int = Field(default=DEFAULT_GRAPH_RECURSION_LIMIT, ge=1, le=50)
     reason: str
     matched_rules: list[str] = Field(default_factory=list)
 
@@ -41,7 +41,7 @@ def decide_runtime_policy(
 
     resolved_top_k = top_k or DEFAULT_TOP_K
     resolved_engine = normalize_engine(engine) or RuntimeEngine.GRAPH
-    resolved_recursion_limit = recursion_limit or DEFAULT_RECURSION_LIMIT
+    resolved_recursion_limit = recursion_limit or DEFAULT_GRAPH_RECURSION_LIMIT
 
     policy_use_llm = should_use_llm_by_policy(
         normalized_query=normalized_query,

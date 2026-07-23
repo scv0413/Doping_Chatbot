@@ -6,7 +6,7 @@ from app.chat.domain.drug_search.schemas import (
     DrugSearchResult,
 )
 from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
-from app.chat.router.intent_router import ChatRoute, RouteDecision
+from app.chat.orchestration.router.intent_router import ChatRoute, RouteDecision
 
 
 def test_format_answer_combines_drug_result_and_retrieval_citations() -> None:

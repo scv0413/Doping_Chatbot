@@ -11,8 +11,8 @@ from app.chat.evals.langsmith_answer_eval import (
     route_match_evaluator,
     safety_disclaimer_evaluator,
 )
-from app.chat.pipeline.chat_pipeline import ChatPipelineResult
-from app.chat.router.intent_router import ChatRoute, RouteDecision
+from app.chat.orchestration.pipeline.chat_pipeline import ChatPipelineResult
+from app.chat.orchestration.router.intent_router import ChatRoute, RouteDecision
 from app.chat.domain.policy.answer_policy import OFFICIAL_DECISION_DISCLAIMER
 
 

@@ -18,7 +18,7 @@ from app.chat.domain.drug_search.schemas import (
 from app.chat.domain.retrieval.query_rewriter import rewrite_query
 from app.chat.domain.retrieval.retriever import search
 from app.chat.domain.retrieval.schemas import RetrievalMatch
-from app.chat.router.intent_router import ChatRoute, RouteDecision, route_question
+from app.chat.orchestration.router.intent_router import ChatRoute, RouteDecision, route_question
 from app.chat.tools.schemas import DrugSearchToolOutput, PharmacologyInfoToolOutput, RagSearchToolOutput
 
 

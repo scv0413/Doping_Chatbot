@@ -4,14 +4,14 @@ from app.chat.domain.drug_search.schemas import (
     DrugSearchInput,
     DrugSearchResult,
 )
-from app.chat.pipeline.chat_pipeline import (
+from app.chat.orchestration.pipeline.chat_pipeline import (
     build_retrieval_query,
     run_chat_pipeline,
     should_run_drug_search,
     should_run_retrieval,
 )
 from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
-from app.chat.router.intent_router import ChatRoute, RouteDecision
+from app.chat.orchestration.router.intent_router import ChatRoute, RouteDecision
 
 
 def test_pipeline_runs_rag_only_flow_without_drug_search() -> None:
