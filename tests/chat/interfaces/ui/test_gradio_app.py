@@ -68,3 +68,28 @@ def test_respond_does_not_expose_internal_runtime_metadata() -> None:
     assert "top_k" not in combined
     assert "use_llm" not in combined
     assert "retrieval_attempts" not in combined
+
+
+def test_format_citations_shows_official_source_for_reviewed_manual() -> None:
+    response = ChatResponse(
+        answer="답변",
+        route="rag",
+        query="통지 절차",
+        engine=ChatEngine.GRAPH,
+        citations=[
+            CitationSummary(
+                chunk_id="wada_isti_ko_human_reviewed:5.3.5:c0",
+                source_id="wada_isti_ko_human_reviewed",
+                title="ISTI Korean Human-Reviewed Guide",
+                page=83,
+                distance=0.1,
+                official_source_id="wada_isti_2021_ko_en",
+                official_source_page=83,
+            )
+        ],
+    )
+
+    citations = format_citations(response)
+
+    assert "ISTI Korean Human-Reviewed Guide, p.83" in citations
+    assert "원문: `wada_isti_2021_ko_en`, p.83" in citations

@@ -24,6 +24,9 @@ def format_citations(response: ChatResponse) -> str:
         lines.append(
             f"{index}. {citation.title}{page_text} | `{citation.chunk_id}` | distance={citation.distance:.4f}"
         )
+        if citation.official_source_id:
+            official_page_text = f", p.{citation.official_source_page}" if citation.official_source_page is not None else ""
+            lines.append(f"   - 원문: `{citation.official_source_id}`{official_page_text}")
     return "\n".join(lines)
 
 

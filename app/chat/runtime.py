@@ -37,6 +37,8 @@ class CitationSummary(BaseModel):
     title: str
     page: int | None = None
     distance: float
+    official_source_id: str | None = None
+    official_source_page: int | None = None
 
 
 class ChatResponse(BaseModel):
@@ -168,4 +170,6 @@ def build_citation_summary(match) -> CitationSummary:
         title=match.title,
         page=match.metadata.page,
         distance=match.distance,
+        official_source_id=match.metadata.official_source_id,
+        official_source_page=match.metadata.official_source_page,
     )

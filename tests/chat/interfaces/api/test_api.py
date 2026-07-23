@@ -275,3 +275,36 @@ def test_public_chat_response_schema_hides_internal_runtime_fields() -> None:
     ):
         assert internal_field not in public_properties
         assert internal_field in chat_properties
+
+
+def test_public_api_serializes_official_source_for_reviewed_manual() -> None:
+    from app.chat.runtime import CitationSummary
+
+    def reviewed_manual_service(request: ChatRequest) -> ChatResponse:
+        return ChatResponse(
+            answer="검수된 한국어 안내문입니다.",
+            route="rag",
+            query=request.query,
+            engine=ChatEngine.GRAPH,
+            citations=[
+                CitationSummary(
+                    chunk_id="wada_isti_ko_human_reviewed:5.3.5:c0",
+                    source_id="wada_isti_ko_human_reviewed",
+                    title="ISTI Korean Human-Reviewed Guide",
+                    page=83,
+                    distance=0.1,
+                    official_source_id="wada_isti_2021_ko_en",
+                    official_source_page=83,
+                )
+            ],
+        )
+
+    response = build_test_client(chat_service=reviewed_manual_service).post(
+        "/api/v1/chat-responses",
+        json={"query": "ISTI 통지 절차"},
+    )
+
+    assert response.status_code == 200
+    citation = response.json()["citations"][0]
+    assert citation["official_source_id"] == "wada_isti_2021_ko_en"
+    assert citation["official_source_page"] == 83
