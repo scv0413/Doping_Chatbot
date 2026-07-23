@@ -4,12 +4,12 @@ from typing import Any
 from pydantic import BaseModel
 
 from app.core.config import settings
-from app.preprocess.manifest import load_source_manifest
-from app.preprocess.pdf_loader import (
+from app.preprocess.sources.manifest import load_source_manifest
+from app.preprocess.pdf.loader import (
     inspect_pdf_page_loading,
     load_pdf_pages,
 )
-from app.preprocess.schemas import DocumentChunk
+from app.preprocess.sources.schemas import DocumentChunk
 
 
 class PageRecord(BaseModel):

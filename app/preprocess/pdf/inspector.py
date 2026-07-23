@@ -2,8 +2,8 @@ from pathlib import Path
 import re
 import fitz
 
-from app.preprocess.manifest import load_source_manifest
-from app.preprocess.schemas import DocumentMetadata
+from app.preprocess.sources.manifest import load_source_manifest
+from app.preprocess.sources.schemas import DocumentMetadata
 
 
 ROMAN_FOOTERS = {

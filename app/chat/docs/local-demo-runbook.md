@@ -24,8 +24,8 @@ LANGSMITH_PROJECT=doping-chatbot
 원본 PDF/manual source가 바뀌었을 때만 실행한다.
 
 ```bash
-uv run python -m app.preprocess.preprocess
-uv run python -m app.preprocess.chunker
+uv run python -m app.preprocess.transform.preprocess
+uv run python -m app.preprocess.transform.chunker
 uv run python -m app.chat.retrieval.indexer
 ```
 

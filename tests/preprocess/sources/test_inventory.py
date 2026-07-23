@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from app.preprocess.source_inventory import (
+from app.preprocess.sources.inventory import (
     build_refresh_plan,
     build_source_inventory,
     compare_source_inventories,

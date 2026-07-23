@@ -293,7 +293,7 @@ git commit -m "feat: add Korean OCR fallback selection"
 ~~~python
 def test_isti_low_quality_page_uses_resolved_ocr_text(monkeypatch, isti_metadata) -> None:
     monkeypatch.setattr(
-        "app.preprocess.pdf_loader.resolve_page_text",
+        "app.preprocess.pdf.loader.resolve_page_text",
         lambda page, **kwargs: PageExtractionResult(
             text="복구된 한국어 본문 " * 20,
             extraction_method="tesseract_ocr",

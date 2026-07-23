@@ -5,8 +5,8 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from app.preprocess.manifest import load_source_manifest
-from app.preprocess.schemas import ProcessingStatus
+from app.preprocess.sources.manifest import load_source_manifest
+from app.preprocess.sources.schemas import ProcessingStatus
 
 
 class SourceInventoryEntry(BaseModel):

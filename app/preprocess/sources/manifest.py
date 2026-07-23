@@ -1,7 +1,7 @@
 import csv
 from pathlib import Path
 
-from app.preprocess.schemas import (
+from app.preprocess.sources.schemas import (
     Authority,
     DocumentMetadata,
     DocumentType,

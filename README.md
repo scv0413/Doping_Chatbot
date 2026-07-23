@@ -84,8 +84,8 @@ CHROMA_COLLECTION_NAME=doping_chunks_openai_small
 전처리:
 
 ```bash
-uv run python -m app.preprocess.preprocess
-uv run python -m app.preprocess.chunker
+uv run python -m app.preprocess.transform.preprocess
+uv run python -m app.preprocess.transform.chunker
 ```
 
 색인:

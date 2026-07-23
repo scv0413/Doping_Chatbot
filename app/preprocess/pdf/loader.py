@@ -4,8 +4,8 @@ from typing import Any
 
 import fitz
 
-from app.preprocess.manifest import load_source_manifest
-from app.preprocess.schemas import (
+from app.preprocess.sources.manifest import load_source_manifest
+from app.preprocess.sources.schemas import (
     DocumentChunk,
     DocumentMetadata,
     DocumentType,
