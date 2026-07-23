@@ -41,6 +41,13 @@ def test_extract_drug_query_uses_unknown_ingredient_or_herbal_term_as_kada_candi
     assert herbal.product_name == "감초"
 
 
+def test_extract_drug_query_does_not_treat_competition_period_as_a_product() -> None:
+    extraction = extract_drug_query("약물 반감기로 경기기간 복용 가능 여부를 판단해도 돼?")
+
+    assert extraction.product_name is None
+    assert extraction.ingredient_name is None
+
+
 def test_extract_drug_query_keeps_known_ingredient_as_ingredient() -> None:
     extraction = extract_drug_query("경기기간 중 아세트아미노펜 복용해도 돼?")
 

@@ -8,11 +8,11 @@ KADA/WADA 도핑 규정, 금지약물, 현장 대응, 반감기 정보를 근거
 
 ## Portfolio Snapshot
 
-- **Implementation baseline:** `4f45bf8` 이후 검증된 기능을 기준으로 동결
-- **Regression tests:** `228 passed`
-- **Local release gate:** 15 cases, `route_match`, `source_hit`, `term_hit`, `retrieval_quality`, `tool_contract` 모두 `1.0`
-- **LangSmith:** retrieval 및 deterministic answer evaluation 완료
-- **Safety:** retrieved context 기반 답변, 명시적 출처, 정보 부족 시 보류, 단정 방지, 대상자 톤, 안전 고지의 6-rule policy 적용
+- **Latest local verification:** 2026-07-24 (working tree)
+- **Regression tests:** 280 passed
+- **Local release gate:** 15 cases; route_match, source_hit, term_hit, retrieval_quality, tool_contract all 1.0
+- **LangSmith:** retrieval and deterministic answer evaluation complete
+- **Safety:** retrieved context only, explicit source, insufficient-information handling, no fabrication, audience tone, and safety caveats
 
 ## Problem
 
@@ -169,8 +169,10 @@ uv run python scripts/staging_smoke.py --base-url http://127.0.0.1:8000
 
 Latest verified baseline:
 
-- `228 passed`
-- release gate: 15 cases; all required metric averages `1.0`
+- 280 passed
+- release gate: 15 cases; all required metric averages 1.0
+- staging smoke: health, readiness, public/debug API validation passed
+- ready check: processed chunk records and Chroma collection both report 580
 - [LangSmith retrieval experiment](https://smith.langchain.com/o/2d4720fb-5dfa-4666-983e-680c70b9ab87/datasets/aabceefb-4dbf-412c-9252-753697fdfb61/compare?selectedSessions=9eec1299-4641-4f67-88ca-227aee233144)
 - [LangSmith deterministic answer experiment](https://smith.langchain.com/o/2d4720fb-5dfa-4666-983e-680c70b9ab87/datasets/a7f204a4-bd4e-410c-90ac-61b2a4453de0/compare?selectedSessions=632f4b89-daff-465d-91e6-eba3fef27b0a)
 

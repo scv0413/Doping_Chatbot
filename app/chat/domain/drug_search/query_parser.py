@@ -76,6 +76,10 @@ NON_MEDICATION_CANDIDATES = {
     "tue",
     "규정",
     "금지목록",
+    "경기",
+    "경기기간",
+    "경기기간중",
+    "경기기간외",
 }
 OUT_OF_COMPETITION_TERMS = {"경기기간외", "경기기간 외", "경기 외", "시합 전", "대회 전"}
 PRODUCT_BEFORE_USE_PATTERN = re.compile(
@@ -160,7 +164,7 @@ def extract_product_before_use(query: str) -> str | None:
         return None
 
     candidate = match.group("product").strip()
-    if len(candidate) < 2 or normalize_text(candidate) in GENERIC_PRODUCT_TERMS:
+    if len(candidate) < 2 or normalize_text(candidate) in NON_MEDICATION_CANDIDATES:
         return None
     return candidate
 
