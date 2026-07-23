@@ -42,6 +42,7 @@ class DrugSearchInput(BaseModel):
     route: AdministrationRoute | None = None
     sport: str | None = None
     dose: str | None = None
+    drug_code: str | None = None
 
     @model_validator(mode="after")
     def require_searchable_text(self) -> "DrugSearchInput":
@@ -54,11 +55,28 @@ class DrugSearchInput(BaseModel):
 class DrugCandidate(BaseModel):
     name: str
     match_type: MatchType
+    drug_code: str | None = None
     ingredient_names: list[str] = Field(default_factory=list)
     manufacturer: str | None = None
     source_name: str | None = None
     source_url: str | None = None
     retrieved_at: str | None = None
+
+
+class KADADrugDetail(BaseModel):
+    """KADA product-detail fields shown without chatbot inference."""
+
+    drug_code: str
+    product_name: str
+    ingredients: list[str] = Field(default_factory=list)
+    in_competition_status: str | None = None
+    out_of_competition_status: str | None = None
+    package_image_url: str | None = None
+    pill_image_url: str | None = None
+    dosage: str | None = None
+    doping_notices: list[str] = Field(default_factory=list)
+    source_url: str
+    retrieved_at: str
 
 
 class DrugSearchSource(BaseModel):
@@ -72,8 +90,10 @@ class DrugSearchResult(BaseModel):
     input: DrugSearchInput
     matched_candidates: list[DrugCandidate] = Field(default_factory=list)
     matched_substances: list[str] = Field(default_factory=list)
+    selected_product_detail: KADADrugDetail | None = None
     prohibited_categories: list[str] = Field(default_factory=list)
     requires_product_selection: bool = False
+    herbal_verification_unavailable: bool = False
     requires_route_confirmation: bool = False
     requires_sport_confirmation: bool = False
     requires_dose_confirmation: bool = False

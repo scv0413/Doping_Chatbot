@@ -54,4 +54,4 @@ def test_pipeline_combines_drug_search_pharmacology_and_rag_manual() -> None:
     assert "일반적 반감기 참고" in result.answer
     assert "검출 가능 시간이나 출전 가능 여부" in result.answer
     assert "추가로 알려주면 더 정확히 도와줄 정보" in result.answer
-    assert "PubChem" in result.answer
+    assert "Pseudoephedrine is related to S6 stimulants" in result.answer

@@ -95,6 +95,7 @@ def run_chat_graph(
     query = search_input.query if isinstance(search_input, DrugSearchInput) else search_input
     initial_state: ChatGraphState = {
         "query": query,
+        **({"search_input": search_input} if isinstance(search_input, DrugSearchInput) else {}),
         "top_k": top_k,
         "use_llm": use_llm,
         "retrieval_attempts": 0,

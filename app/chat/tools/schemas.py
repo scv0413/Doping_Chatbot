@@ -53,6 +53,7 @@ class DrugSearchToolRequest(BaseModel):
     route: AdministrationRoute | None = None
     sport: str | None = None
     dose: str | None = None
+    drug_code: str | None = None
     request_id: str | None = None
 
 

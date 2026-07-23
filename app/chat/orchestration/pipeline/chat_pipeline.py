@@ -10,6 +10,7 @@ from app.chat.domain.pharmacology.service import (
     search_pharmacology_info,
     should_run_pharmacology_info,
 )
+from app.chat.domain.drug_search.query_parser import DrugQueryLLM, extract_drug_query
 from app.chat.domain.drug_search.schemas import (
     DrugSearchInput,
     DrugSearchResult,
@@ -18,7 +19,7 @@ from app.chat.domain.drug_search.schemas import (
 from app.chat.domain.retrieval.query_rewriter import rewrite_query
 from app.chat.domain.retrieval.retriever import search
 from app.chat.domain.retrieval.schemas import RetrievalMatch
-from app.chat.orchestration.router.intent_router import ChatRoute, RouteDecision, route_question
+from app.chat.orchestration.router.intent_router import ChatRoute, RouteDecision, route_question, route_search_input
 from app.chat.tools.schemas import DrugSearchToolOutput, PharmacologyInfoToolOutput, RagSearchToolOutput
 
 
@@ -78,9 +79,10 @@ def run_chat_pipeline(
     retriever: Retriever = search,
     query_rewriter: QueryRewriter = rewrite_query,
     pharmacology_searcher: PharmacologySearcher = search_pharmacology_info,
+    drug_query_extractor: DrugQueryLLM | None = None,
 ) -> ChatPipelineResult:
-    resolved_input = normalize_pipeline_input(search_input)
-    decision = router(resolved_input.query)
+    resolved_input = normalize_pipeline_input(search_input, llm_extractor=drug_query_extractor)
+    decision = route_search_input(resolved_input) if router is route_question else router(resolved_input.query)
     errors: list[PipelineError] = []
 
     drug_result: DrugSearchResult | None = None
@@ -147,11 +149,21 @@ def run_chat_pipeline(
     )
 
 
-def normalize_pipeline_input(search_input: DrugSearchInput | str) -> DrugSearchInput:
+def normalize_pipeline_input(
+    search_input: DrugSearchInput | str,
+    llm_extractor: DrugQueryLLM | None = None,
+) -> DrugSearchInput:
     if isinstance(search_input, DrugSearchInput):
         return search_input
 
-    return DrugSearchInput(query=search_input)
+    extraction = extract_drug_query(search_input, llm_extractor=llm_extractor)
+    return DrugSearchInput(
+        query=search_input,
+        product_name=extraction.product_name,
+        ingredient_name=extraction.ingredient_name,
+        competition_period=extraction.competition_period,
+        route=extraction.route,
+    )
 
 
 def should_run_drug_search(decision: RouteDecision) -> bool:

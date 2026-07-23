@@ -51,6 +51,7 @@ def generate_answer(
         query=query,
         decision=decision,
         structured_answer=structured_answer,
+        retrieval_matches=retrieval_matches or [],
     )
 
     trimmed_messages = trim_answer_messages(messages)
@@ -67,6 +68,7 @@ def build_answer_messages(
     query: str,
     decision: RouteDecision,
     structured_answer: str,
+    retrieval_matches: list[RetrievalMatch] | None = None,
 ) -> list[ChatMessage]:
     user_prompt = f"""사용자 질문:
 {query}
@@ -78,6 +80,9 @@ def build_answer_messages(
 
 검증된 구조화 답변:
 {structured_answer}
+
+내부 근거 식별자 (답변 본문에 그대로 표시하지 말 것):
+{format_internal_references(retrieval_matches or [])}
 
 작성 지침:
 {build_answer_writing_instructions()}
@@ -91,6 +96,16 @@ def build_answer_messages(
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": user_prompt},
     ]
+
+
+def format_internal_references(retrieval_matches: list[RetrievalMatch]) -> str:
+    if not retrieval_matches:
+        return "- 없음"
+
+    return "\n".join(
+        f"- {match.chunk_id}: {match.title}"
+        for match in retrieval_matches
+    )
 
 
 def trim_answer_messages(
@@ -198,11 +213,5 @@ def normalize_answer_text(answer: str) -> str:
 
 
 def format_llm_fallback_answer(structured_answer: str, error: Exception) -> str:
-    return "\n".join(
-        [
-            structured_answer,
-            "",
-            "## 생성 상태",
-            f"- LLM 답변 생성 중 오류가 발생해 구조화 답변으로 대체했습니다: {type(error).__name__}",
-        ]
-    )
+    # Never expose provider or internal errors in a high-stakes user answer.
+    return structured_answer

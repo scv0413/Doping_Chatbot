@@ -1,5 +1,21 @@
-from app.chat.runtime import ChatEngine, ChatRequest, ChatResponse, CitationSummary
-from app.chat.interfaces.ui.gradio_app import build_demo, format_citations, format_metadata, respond
+from app.chat.runtime import (
+    ChatEngine,
+    ChatRequest,
+    ChatResponse,
+    CitationSummary,
+    DrugCandidateSummary,
+    KADADrugDetail,
+)
+from app.chat.interfaces.ui.gradio_app import (
+    build_demo,
+    format_citations,
+    format_metadata,
+    format_product_candidate_choices,
+    build_selected_product_request,
+    format_answer_for_ui,
+    format_drug_detail_card,
+    respond,
+)
 
 
 def fake_runner(request: ChatRequest) -> ChatResponse:
@@ -31,8 +47,48 @@ def test_respond_returns_answer_and_citations_with_runtime_policy_defaults() -> 
     answer, citations = respond(" S0 비승인약물이 뭐야? ", runner=fake_runner)
 
     assert "S0" in answer
-    assert "wada_prohibited_list_2026_ko:p5:c0" in citations
+    assert citations == ""
 
+
+
+def test_format_answer_for_ui_prioritizes_kada_herbal_unavailable_warning() -> None:
+    response = ChatResponse(
+        answer="일반 약물 결과",
+        route="drug_search",
+        query="감초 먹어도 돼?",
+        engine=ChatEngine.GRAPH,
+        herbal_verification_unavailable=True,
+        product_candidates=[
+            DrugCandidateSummary(name="작약감초탕", drug_code="herbal-1"),
+        ],
+    )
+
+    answer = format_answer_for_ui(response)
+
+    assert "생약성분 포함 의약품 금지여부 확인 불가" in answer
+    assert "경기기간 중: 허용" not in answer
+    assert "일반 약물 결과" not in answer
+
+
+def test_format_product_candidate_choices_uses_product_and_ingredient_details() -> None:
+    response = ChatResponse(
+        answer="답변",
+        route="drug_search",
+        query="타이레놀 먹어도 돼?",
+        engine=ChatEngine.GRAPH,
+        requires_product_selection=True,
+        product_candidates=[
+            DrugCandidateSummary(
+                name="타이레놀8시간이알서방정",
+                ingredient_names=["Acetaminophen 325mg"],
+                manufacturer="한국존슨앤드존슨판매",
+            )
+        ],
+    )
+
+    assert format_product_candidate_choices(response) == [
+        ("타이레놀8시간이알서방정 | Acetaminophen 325mg | 한국존슨앤드존슨판매", "타이레놀8시간이알서방정")
+    ]
 
 def test_respond_handles_empty_query() -> None:
     answer, citations = respond("   ", runner=fake_runner)
@@ -93,3 +149,100 @@ def test_format_citations_shows_official_source_for_reviewed_manual() -> None:
 
     assert "ISTI Korean Human-Reviewed Guide, p.42" in citations
     assert "원문: `wada_isti_2023_en`, p.42" in citations
+
+
+def test_selected_product_request_keeps_kada_drug_code() -> None:
+    candidate = DrugCandidateSummary(
+        name="스트렙실오렌지트로키",
+        ingredient_names=["Flurbiprofen 8.75mg"],
+        drug_code="2009092800048",
+    )
+
+    request = build_selected_product_request("경기 중 스트랩실 먹어도 돼?", candidate)
+
+    assert request.product_name == "스트렙실오렌지트로키"
+    assert request.drug_code == "2009092800048"
+
+
+def test_format_drug_detail_card_shows_only_kada_product_fields() -> None:
+    detail = KADADrugDetail(
+        drug_code="2009092800048",
+        product_name="스트렙실오렌지트로키",
+        ingredients=["플루르비프로펜 8.75mg"],
+        in_competition_status="허용",
+        out_of_competition_status="허용",
+        pill_image_url="https://example.com/pill.jpg",
+        package_image_url="https://example.com/package.jpg",
+        dosage="필요시 3~6시간 간격으로 복용",
+        doping_notices=["코 스프레이로 사용하는 것은 예외적으로 허용됩니다."],
+        source_url="https://kada.health.kr/result_drug_kpic?drug_code=2009092800048&herbal=0",
+        retrieved_at="2026-07-23T00:00:00+00:00",
+    )
+
+    card = format_drug_detail_card(detail)
+
+    assert "스트렙실오렌지트로키" in card
+    assert "경기기간 중: 허용" in card
+    assert "경기기간 외: 허용" in card
+    assert "https://example.com/pill.jpg" in card
+    assert "복용법 · 용량" in card
+    assert "필요시 3~6시간 간격으로 복용" in card
+    assert "정보확인" in card
+    assert "코 스프레이로 사용하는 것은 예외적으로 허용됩니다." in card
+    assert "제조사" not in card
+
+
+def test_format_drug_detail_card_uses_status_specific_badges() -> None:
+    detail = KADADrugDetail(
+        drug_code="test",
+        product_name="옥시메타졸린염산염",
+        in_competition_status="금지",
+        out_of_competition_status="허용",
+        source_url="https://kada.health.kr/result_drug_kpic?drug_code=test&herbal=0",
+        retrieved_at="2026-07-23T00:00:00+00:00",
+    )
+
+    card = format_drug_detail_card(detail)
+
+    assert "drug-card__status--prohibited" in card
+    assert "drug-card__status--allowed" in card
+
+
+def test_format_answer_for_ui_hides_rag_text_while_product_selection_is_needed() -> None:
+    response = ChatResponse(
+        answer="## 확인 결과와 근거 핵심\n- 긴 규정 원문",
+        route="drug_search_with_rag",
+        query="경기기간 중 스트렙실 먹어도 돼?",
+        engine=ChatEngine.GRAPH,
+        requires_product_selection=True,
+        product_candidates=[
+            DrugCandidateSummary(
+                name="스트렙실오렌지트로키",
+                drug_code="2009092800048",
+            )
+        ],
+    )
+
+    assert format_answer_for_ui(response) == ""
+
+
+def test_format_answer_for_ui_hides_rag_text_after_selected_drug_card_is_available() -> None:
+    response = ChatResponse(
+        answer="## 행동 지침\n- 긴 규정 원문",
+        route="drug_search_with_rag",
+        query="경기기간 중 스트렙실 먹어도 돼?",
+        engine=ChatEngine.GRAPH,
+        drug_detail=KADADrugDetail(
+            drug_code="2009092800048",
+            product_name="스트렙실오렌지트로키",
+            ingredients=["플루르비프로펜 8.75mg"],
+            in_competition_status="허용",
+            out_of_competition_status="허용",
+            dosage="필요시 3~6시간 간격으로 복용",
+            doping_notices=["코 스프레이로 사용하는 것은 예외적으로 허용됩니다."],
+            source_url="https://kada.health.kr/result_drug_kpic?drug_code=2009092800048&herbal=0",
+            retrieved_at="2026-07-23T00:00:00+00:00",
+        ),
+    )
+
+    assert format_answer_for_ui(response) == ""

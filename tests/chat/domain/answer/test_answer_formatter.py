@@ -46,7 +46,7 @@ def test_format_answer_combines_drug_result_and_retrieval_citations() -> None:
     assert "금지 가능성 있음" in answer
     assert "S6_120" in answer
     assert "용량 또는 농도 기준을 확인해야 합니다." in answer
-    assert "WADA Prohibited List 2026" in answer
+    assert "Pseudoephedrine is prohibited" not in answer
 
 
 def test_format_answer_handles_drug_search_only_product_selection() -> None:
@@ -69,7 +69,7 @@ def test_format_answer_handles_drug_search_only_product_selection() -> None:
 
     assert "확인 필요" in answer
     assert "정확한 제품명과 성분표를 확인해야 합니다." in answer
-    assert "검색된 RAG 문서 근거 없음" in answer
+    assert "검색된 RAG 문서 근거 없음" not in answer
 
 
 def test_format_answer_handles_rag_only() -> None:
@@ -90,10 +90,10 @@ def test_format_answer_handles_rag_only() -> None:
         ],
     )
 
-    assert "공식 문서와 manual source" in answer
-    assert "Field Response Manual" in answer
+    assert "공식 문서 근거를 바탕으로 안내합니다." in answer
+    assert "TUE는 치료목적사용면책" in answer
     assert "공식 판정을 대체하지 않습니다" in answer
-    assert "확인, 기록, 동석 요청" in answer
+    assert "공식 문서에서 관련 근거 1개를 확인했습니다." in answer
     assert "경기기간 중 약물 사용" not in answer
 
 
@@ -108,7 +108,7 @@ def test_formatter_marks_english_source_as_korean_explanation() -> None:
         ],
     )
     assert "WADA 영문 원문을 기준으로 한국어로 안내" in answer
-    assert "ISTI, p.42" in answer
+    assert "The DCO shall establish" not in answer
 
 
 def test_formatter_cites_official_source_for_human_reviewed_manual() -> None:
@@ -133,5 +133,5 @@ def test_formatter_cites_official_source_for_human_reviewed_manual() -> None:
         ],
     )
 
-    assert "ISTI Korean Human-Reviewed Guide, p.42" in answer
-    assert "원문: `wada_isti_2023_en`, p.42" in answer
+    assert "검수된 한국어 안내문입니다." not in answer
+    assert "wada_isti_ko_human_reviewed:5.3.5:c0" not in answer

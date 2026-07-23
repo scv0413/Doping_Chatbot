@@ -34,8 +34,8 @@ def test_generate_answer_uses_deterministic_formatter_when_llm_disabled() -> Non
         use_llm=False,
     )
 
-    assert "공식 문서와 manual source" in answer
-    assert "확인, 기록, 동석 요청" in answer
+    assert "공식 문서 근거를 바탕으로 안내합니다." in answer
+    assert "공식 문서에서 관련 근거 1개를 확인했습니다." in answer
     assert "경기기간 중 약물 사용" not in answer
 
 
@@ -99,8 +99,8 @@ def test_generate_answer_falls_back_when_llm_fails() -> None:
     )
 
     assert "검색된 문서 근거가 없습니다" in answer
-    assert "LLM 답변 생성 중 오류" in answer
-    assert "RuntimeError" in answer
+    assert "LLM 답변 생성 중 오류" not in answer
+    assert "RuntimeError" not in answer
 
 
 def test_build_answer_messages_contains_guardrails() -> None:

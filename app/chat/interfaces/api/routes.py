@@ -11,7 +11,8 @@ from app.chat.interfaces.api.security import (
     require_roles,
 )
 from app.core.config import settings
-from app.chat.runtime import ChatRequest, ChatResponse, CitationSummary
+from app.chat.domain.drug_search.schemas import KADADrugDetail
+from app.chat.runtime import ChatRequest, ChatResponse, CitationSummary, DrugCandidateSummary
 
 router = APIRouter()
 
@@ -20,6 +21,9 @@ class PublicChatRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     query: str = Field(min_length=1)
+    product_name: str | None = None
+    ingredient_name: str | None = None
+    drug_code: str | None = None
 
 
 class PublicChatResponse(BaseModel):
@@ -27,6 +31,9 @@ class PublicChatResponse(BaseModel):
     query: str
     citations: list[CitationSummary] = Field(default_factory=list)
     drug_status: str | None = None
+    product_candidates: list[DrugCandidateSummary] = Field(default_factory=list)
+    requires_product_selection: bool = False
+    drug_detail: KADADrugDetail | None = None
     pharmacology_status: str | None = None
     pharmacology_substance: str | None = None
     errors: list[dict] = Field(default_factory=list)
@@ -38,6 +45,9 @@ class PublicChatResponse(BaseModel):
             query=response.query,
             citations=response.citations,
             drug_status=response.drug_status,
+            product_candidates=response.product_candidates,
+            requires_product_selection=response.requires_product_selection,
+            drug_detail=response.drug_detail,
             pharmacology_status=response.pharmacology_status,
             pharmacology_substance=response.pharmacology_substance,
             errors=response.errors,
@@ -64,7 +74,14 @@ def create_chat_response(
     principal: AuthenticatedPrincipal = Depends(enforce_rate_limit),
     chat_service: ChatService = Depends(get_chat_service),
 ) -> PublicChatResponse:
-    response = PublicChatResponse.from_chat_response(chat_service(ChatRequest(query=request.query)))
+    response = PublicChatResponse.from_chat_response(chat_service(
+        ChatRequest(
+            query=request.query,
+            product_name=request.product_name,
+            ingredient_name=request.ingredient_name,
+            drug_code=request.drug_code,
+        )
+    ))
     log_chat_access(principal, endpoint="/api/v1/chat-responses", status_code=200)
     return response
 

@@ -308,3 +308,27 @@ def test_public_api_serializes_official_source_for_reviewed_manual() -> None:
     citation = response.json()["citations"][0]
     assert citation["official_source_id"] == "wada_isti_2023_en"
     assert citation["official_source_page"] == 42
+
+
+def test_create_chat_response_accepts_selected_kada_product() -> None:
+    seen_request: ChatRequest | None = None
+
+    def selected_product_service(request: ChatRequest) -> ChatResponse:
+        nonlocal seen_request
+        seen_request = request
+        return fake_chat_service(request)
+
+    client = build_test_client(selected_product_service)
+    response = client.post(
+        "/api/v1/chat-responses",
+        json={
+            "query": "경기 중 스트렙실 먹어도 돼?",
+            "product_name": "스트렙실오렌지트로키",
+            "drug_code": "2009092800048",
+        },
+    )
+
+    assert response.status_code == 200
+    assert seen_request is not None
+    assert seen_request.product_name == "스트렙실오렌지트로키"
+    assert seen_request.drug_code == "2009092800048"

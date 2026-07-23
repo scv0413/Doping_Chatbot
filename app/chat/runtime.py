@@ -4,7 +4,13 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from app.chat.domain.answer.types import AnswerLLM
-from app.chat.domain.drug_search.schemas import DrugSearchInput
+from app.chat.domain.drug_search.schemas import (
+    AdministrationRoute,
+    CompetitionPeriod,
+    DrugSearchInput,
+    KADADrugDetail,
+    MatchType,
+)
 from app.chat.orchestration.graph.graph import run_chat_graph
 from app.chat.orchestration.pipeline.chat_pipeline import (
     ChatPipelineResult,
@@ -29,6 +35,13 @@ class ChatRequest(BaseModel):
     use_llm: bool | None = None
     engine: ChatEngine | None = None
     recursion_limit: int | None = Field(default=None, ge=1, le=50)
+    product_name: str | None = None
+    ingredient_name: str | None = None
+    competition_period: CompetitionPeriod = CompetitionPeriod.UNKNOWN
+    route: AdministrationRoute | None = None
+    sport: str | None = None
+    dose: str | None = None
+    drug_code: str | None = None
 
 
 class CitationSummary(BaseModel):
@@ -39,6 +52,13 @@ class CitationSummary(BaseModel):
     distance: float
     official_source_id: str | None = None
     official_source_page: int | None = None
+
+
+class DrugCandidateSummary(BaseModel):
+    name: str
+    ingredient_names: list[str] = Field(default_factory=list)
+    manufacturer: str | None = None
+    drug_code: str | None = None
 
 
 class ChatResponse(BaseModel):
@@ -52,6 +72,10 @@ class ChatResponse(BaseModel):
     policy_matched_rules: list[str] = Field(default_factory=list)
     citations: list[CitationSummary] = Field(default_factory=list)
     drug_status: str | None = None
+    product_candidates: list[DrugCandidateSummary] = Field(default_factory=list)
+    requires_product_selection: bool = False
+    herbal_verification_unavailable: bool = False
+    drug_detail: KADADrugDetail | None = None
     pharmacology_status: str | None = None
     pharmacology_substance: str | None = None
     retrieval_attempts: int = 0
@@ -80,9 +104,10 @@ def run_chat(
     dependencies = dependencies or ChatRuntimeDependencies()
 
     runner_kwargs = build_runner_kwargs(dependencies)
+    search_input = chat_request_to_drug_search_input(resolved_request)
     if runtime_policy.engine is RuntimeEngine.GRAPH:
         result = run_chat_graph(
-            resolved_request.query,
+            search_input,
             top_k=runtime_policy.top_k,
             use_llm=runtime_policy.use_llm,
             recursion_limit=runtime_policy.recursion_limit,
@@ -90,7 +115,7 @@ def run_chat(
         )
     else:
         result = run_chat_pipeline(
-            resolved_request.query,
+            search_input,
             top_k=runtime_policy.top_k,
             use_llm=runtime_policy.use_llm,
             **runner_kwargs,
@@ -128,6 +153,18 @@ def normalize_chat_request(request: ChatRequest | DrugSearchInput | str) -> Chat
     return ChatRequest(query=request)
 
 
+def chat_request_to_drug_search_input(request: ChatRequest) -> DrugSearchInput:
+    return DrugSearchInput(
+        query=request.query,
+        product_name=request.product_name,
+        ingredient_name=request.ingredient_name,
+        competition_period=request.competition_period,
+        route=request.route,
+        sport=request.sport,
+        dose=request.dose,
+        drug_code=request.drug_code,
+    )
+
 def resolve_runtime_policy(request: ChatRequest) -> RuntimePolicyDecision:
     return decide_runtime_policy(
         query=request.query,
@@ -154,6 +191,14 @@ def build_chat_response(
         policy_matched_rules=runtime_policy.matched_rules,
         citations=[build_citation_summary(match) for match in result.retrieval_matches],
         drug_status=result.drug_result.status.value if result.drug_result else None,
+        product_candidates=build_product_candidate_summaries(result.drug_result),
+        requires_product_selection=bool(
+            result.drug_result and result.drug_result.requires_product_selection
+        ),
+        herbal_verification_unavailable=bool(
+            result.drug_result and result.drug_result.herbal_verification_unavailable
+        ),
+        drug_detail=result.drug_result.selected_product_detail if result.drug_result else None,
         pharmacology_status=result.pharmacology_result.status.value if result.pharmacology_result else None,
         pharmacology_substance=result.pharmacology_result.substance_name if result.pharmacology_result else None,
         retrieval_attempts=result.retrieval_attempts,
@@ -162,6 +207,23 @@ def build_chat_response(
         errors=[error.model_dump() for error in result.errors],
     )
 
+
+def build_product_candidate_summaries(
+    drug_result,
+) -> list[DrugCandidateSummary]:
+    if drug_result is None:
+        return []
+
+    return [
+        DrugCandidateSummary(
+            name=candidate.name,
+            ingredient_names=candidate.ingredient_names,
+            manufacturer=candidate.manufacturer,
+            drug_code=candidate.drug_code,
+        )
+        for candidate in drug_result.matched_candidates
+        if candidate.match_type is MatchType.PRODUCT
+    ]
 
 def build_citation_summary(match) -> CitationSummary:
     return CitationSummary(

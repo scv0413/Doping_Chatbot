@@ -1,3 +1,4 @@
+from app.chat.domain.drug_search.query_parser import DrugQueryExtraction
 from app.chat.domain.drug_search.schemas import (
     CompetitionPeriod,
     DrugRiskStatus,
@@ -170,7 +171,7 @@ def test_pipeline_falls_back_to_raw_query_when_query_rewrite_fails() -> None:
     assert seen_query == "TUE 신청 방법 알려줘"
     assert result.rewritten_query == "TUE 신청 방법 알려줘"
     assert result.errors[0].stage == "query_rewrite"
-    assert "field_response_manual:s6:c0" in result.answer
+    assert "공식 문서에서 관련 근거 1개를 확인했습니다." in result.answer
 
 
 def test_build_retrieval_query_only_expands_drug_routes() -> None:
@@ -182,6 +183,78 @@ def test_build_retrieval_query_only_expands_drug_routes() -> None:
 
     assert query == "TUE 신청 방법 알려줘"
 
+
+
+def test_pipeline_extracts_product_name_from_natural_language_before_kada_search() -> None:
+    seen_input: DrugSearchInput | None = None
+
+    def fake_drug_searcher(search_input: DrugSearchInput) -> DrugSearchResult:
+        nonlocal seen_input
+        seen_input = search_input
+        return DrugSearchResult(
+            status=DrugRiskStatus.NEEDS_VERIFICATION,
+            input=search_input,
+            recommended_action="KADA 조회 결과를 확인하세요.",
+        )
+
+    result = run_chat_pipeline(
+        "경기기간 중 스트랩실 먹어도 돼?",
+        use_llm=False,
+        drug_searcher=fake_drug_searcher,
+    )
+
+    assert seen_input is not None
+    assert seen_input.product_name == "스트랩실"
+    assert seen_input.competition_period is CompetitionPeriod.IN_COMPETITION
+    assert seen_input.route.value == "oral"
+    assert result.search_input.product_name == "스트랩실"
+
+
+def test_pipeline_searches_unknown_ingredient_candidate_in_kada() -> None:
+    seen_input: DrugSearchInput | None = None
+
+    def fake_drug_searcher(search_input: DrugSearchInput) -> DrugSearchResult:
+        nonlocal seen_input
+        seen_input = search_input
+        return DrugSearchResult(
+            status=DrugRiskStatus.NEEDS_VERIFICATION,
+            input=search_input,
+            recommended_action="KADA 조회 결과를 확인하세요.",
+        )
+
+    result = run_chat_pipeline(
+        "세리티진염산염 계열의 약",
+        use_llm=False,
+        drug_searcher=fake_drug_searcher,
+    )
+
+    assert seen_input is not None
+    assert seen_input.product_name == "세리티진염산염"
+    assert result.decision.route is ChatRoute.DRUG_SEARCH
+
+
+def test_pipeline_uses_llm_extractor_only_when_rule_extraction_has_no_candidate() -> None:
+    seen_input: DrugSearchInput | None = None
+
+    def fake_drug_searcher(search_input: DrugSearchInput) -> DrugSearchResult:
+        nonlocal seen_input
+        seen_input = search_input
+        return DrugSearchResult(
+            status=DrugRiskStatus.NEEDS_VERIFICATION,
+            input=search_input,
+            recommended_action="KADA 조회 결과를 확인하세요.",
+        )
+
+    run_chat_pipeline(
+        "경기 중 이 제품 사용해도 돼? 제품명은 메디콜드야.",
+        use_llm=False,
+        drug_searcher=fake_drug_searcher,
+        drug_query_extractor=lambda _query: DrugQueryExtraction(product_name="메디콜드", source="llm"),
+    )
+
+    assert seen_input is not None
+    assert seen_input.product_name == "메디콜드"
+    assert seen_input.competition_period is CompetitionPeriod.IN_COMPETITION
 
 def test_route_helpers() -> None:
     assert should_run_drug_search(RouteDecision(route=ChatRoute.DRUG_SEARCH, reason="drug"))

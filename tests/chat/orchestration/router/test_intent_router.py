@@ -1,4 +1,5 @@
-from app.chat.orchestration.router.intent_router import ChatRoute, route_question
+from app.chat.domain.drug_search.schemas import DrugSearchInput
+from app.chat.orchestration.router.intent_router import ChatRoute, route_question, route_search_input
 
 
 def test_routes_product_name_question_to_drug_search() -> None:
@@ -6,6 +7,22 @@ def test_routes_product_name_question_to_drug_search() -> None:
 
     assert decision.route is ChatRoute.DRUG_SEARCH
     assert "타이레놀" in decision.matched_terms
+
+
+def test_routes_spray_use_expression_to_drug_search() -> None:
+    decision = route_question("코앤쿨 뿌려도 돼?")
+
+    assert decision.route is ChatRoute.DRUG_SEARCH
+    assert "뿌려" in decision.matched_terms
+
+
+def test_routes_extracted_unknown_drug_candidate_to_drug_search() -> None:
+    decision = route_search_input(
+        DrugSearchInput(query="지르텍", product_name="지르텍")
+    )
+
+    assert decision.route is ChatRoute.DRUG_SEARCH
+    assert "지르텍" in decision.matched_terms
 
 
 def test_routes_ingredient_with_competition_context_to_drug_search_with_rag() -> None:

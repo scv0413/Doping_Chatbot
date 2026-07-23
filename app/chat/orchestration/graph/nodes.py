@@ -24,7 +24,7 @@ from app.chat.orchestration.pipeline.chat_pipeline import (
 )
 from app.chat.domain.retrieval.query_rewriter import rewrite_query
 from app.chat.domain.retrieval.retriever import search
-from app.chat.orchestration.router.intent_router import route_question
+from app.chat.orchestration.router.intent_router import route_question, route_search_input
 from app.chat.tools.mcp_registry import MCPToolDependencies, execute_mcp_tool
 from app.chat.tools.rag_search_tool import tool_output_to_retrieval_matches
 from app.chat.tools.schemas import (
@@ -85,6 +85,7 @@ def build_drug_search_tool_request(search_input: DrugSearchInput) -> DrugSearchT
         route=search_input.route,
         sport=search_input.sport,
         dose=search_input.dose,
+        drug_code=search_input.drug_code,
     )
 
 
@@ -113,8 +114,12 @@ def run_graph_tool(
 
 def build_route_node(dependencies: ChatGraphDependencies) -> Callable[[ChatGraphState], dict[str, Any]]:
     def node(state: ChatGraphState) -> dict[str, Any]:
-        search_input = normalize_pipeline_input(state["query"])
-        decision = dependencies.router(search_input.query)
+        provided_input = state.get("search_input")
+        if provided_input and (provided_input.product_name or provided_input.ingredient_name):
+            search_input = provided_input
+        else:
+            search_input = normalize_pipeline_input(state["query"])
+        decision = route_search_input(search_input) if dependencies.router is route_question else dependencies.router(search_input.query)
         return {
             "search_input": search_input,
             "decision": decision,

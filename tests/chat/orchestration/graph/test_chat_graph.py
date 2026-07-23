@@ -89,6 +89,37 @@ def test_graph_nodes_run_rag_flow() -> None:
     assert "확인, 기록, 동석 요청" in state["answer"]
 
 
+
+def test_graph_route_node_extracts_product_name_from_runtime_input_without_selection() -> None:
+    dependencies = ChatGraphDependencies()
+    state = {
+        "query": "경기기간 중 스트랩실 먹어도 돼?",
+        "search_input": DrugSearchInput(query="경기기간 중 스트랩실 먹어도 돼?"),
+        "top_k": 3,
+        "use_llm": False,
+        "errors": [],
+    }
+
+    state.update(build_route_node(dependencies)(state))
+
+    assert state["search_input"].product_name == "스트랩실"
+    assert state["search_input"].competition_period.value == "in_competition"
+
+def test_graph_route_node_routes_unknown_extracted_drug_candidate_to_kada() -> None:
+    dependencies = ChatGraphDependencies()
+    state = {
+        "query": "지르텍",
+        "top_k": 3,
+        "use_llm": False,
+        "errors": [],
+    }
+
+    state.update(build_route_node(dependencies)(state))
+
+    assert state["search_input"].product_name == "지르텍"
+    assert state["decision"].route is ChatRoute.DRUG_SEARCH
+
+
 def test_drug_search_node_uses_fallback_error_path() -> None:
     def broken_drug_searcher(search_input: DrugSearchInput) -> DrugSearchResult:
         raise RuntimeError("temporary failure")
@@ -236,7 +267,7 @@ def test_graph_stops_after_one_retry_when_results_stay_empty() -> None:
     assert result.retrieval_attempts == 2
     assert result.retrieval_retry_reason == "empty_results"
     assert result.errors == []
-    assert "공식 문서와 manual source" in result.answer
+    assert "검색된 문서 근거가 없습니다" in result.answer
 
 
 def test_graph_nodes_call_mcp_registry_style_tool_executor() -> None:

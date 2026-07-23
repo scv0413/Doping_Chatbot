@@ -1,4 +1,12 @@
 TERM_EXPANSIONS = {
+    "도핑검사": [
+        "도핑관리",
+        "시료채취",
+        "검사 통지",
+        "doping control",
+        "sample collection",
+        "notification",
+    ],
     "검사관": [
         "도핑검사관",
         "시료채취요원",
@@ -30,6 +38,64 @@ TERM_EXPANSIONS = {
         "blood collection",
         "BCO",
         "Blood Collection Officer",
+    ],
+    "소변": [
+        "urine Sample",
+        "partial Sample",
+        "insufficient volume",
+        "Annex E",
+        "continuous observation",
+        "hydrate",
+        "DCO",
+        "Doping Control Station",
+    ],
+    "오줌": [
+        "urine Sample",
+        "partial Sample",
+        "insufficient volume",
+        "Annex E",
+        "continuous observation",
+        "hydrate",
+        "DCO",
+        "Doping Control Station",
+    ],
+    "대변": [
+        "Doping Control Station",
+        "continuous observation",
+        "DCO",
+        "Chaperone",
+        "Article 7.3.5",
+        "Article 7.3.6",
+        "approval to leave",
+    ],
+    "화장실": [
+        "Doping Control Station",
+        "continuous observation",
+        "DCO",
+        "Chaperone",
+        "Article 7.3.5",
+        "Article 7.3.6",
+        "approval to leave",
+    ],
+    "굴절계": [
+        "urine Sample",
+        "Suitable Specific Gravity for Analysis",
+        "refractometer",
+        "specific gravity",
+        "1.003",
+        "1.005",
+        "1.010",
+        "WADA ISTI",
+    ],
+    "비중": [
+        "urine Sample",
+        "Suitable Specific Gravity for Analysis",
+        "refractometer",
+        "specific gravity",
+        "1.003",
+        "1.005",
+        "1.010",
+        "WADA ISTI",
     ],
     "거부": [
         "시료채취 거부",
@@ -145,8 +211,34 @@ def rewrite_query(query: str) -> str:
         if trigger in query:
             expansions.extend(terms)
 
+    if is_urine_requirements_query(query):
+        expansions.extend(
+            [
+                "Suitable Volume of Urine for Analysis",
+                "90 mL",
+                "specific gravity",
+                "1.005",
+                "1.010",
+                "1.003",
+                "refractometer",
+                "lab sticks",
+                "field reading preliminary laboratory final",
+            ]
+        )
+
     if not expansions:
         return query
 
     unique_expansions = list(dict.fromkeys(expansions))
     return f"{query}\n{' '.join(unique_expansions)}"
+
+
+
+def is_urine_requirements_query(query: str) -> bool:
+    normalized_query = query.casefold().replace(" ", "")
+    has_urine_term = any(term in normalized_query for term in ("소변", "오줌", "urine"))
+    has_requirement_term = any(
+        term in normalized_query
+        for term in ("ml", "몇", "양", "농도", "비중", "인정", "기준")
+    )
+    return has_urine_term and has_requirement_term

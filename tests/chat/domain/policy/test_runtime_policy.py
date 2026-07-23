@@ -41,3 +41,24 @@ def test_explicit_overrides_are_respected() -> None:
     assert "explicit_use_llm_override" in decision.matched_rules
     assert "explicit_top_k_override" in decision.matched_rules
     assert "explicit_engine_override" in decision.matched_rules
+
+
+def test_runtime_policy_uses_llm_for_general_doping_control_explanation() -> None:
+    decision = decide_runtime_policy("도핑검사할 때 뭐해?")
+
+    assert decision.use_llm is True
+    assert "general_doping_control_llm" in decision.matched_rules
+
+
+def test_runtime_policy_uses_llm_for_urine_collection_scenario() -> None:
+    decision = decide_runtime_policy("검사 중 소변이 안 나오면 어떻게 해야 해?")
+
+    assert decision.use_llm is True
+    assert "complex_field_scenario_llm" in decision.matched_rules
+
+
+def test_runtime_policy_uses_llm_for_specific_gravity_explanation() -> None:
+    decision = decide_runtime_policy("굴절계 기준 비중 1.003 이상이 뭐야?")
+
+    assert decision.use_llm is True
+    assert "complex_field_scenario_llm" in decision.matched_rules

@@ -82,6 +82,10 @@ def should_use_llm_by_policy(
         matched_rules.append("half_life_safety_baseline_formatter")
         return False
 
+    if "도핑검사" in normalized_query or "도핑관리" in normalized_query:
+        matched_rules.append("general_doping_control_llm")
+        return True
+
     if route is ChatRoute.DRUG_SEARCH:
         matched_rules.append("simple_drug_search_formatter")
         return False
@@ -138,6 +142,12 @@ SPECIFIC_SUBSTANCE_TERMS = {
 COMPLEX_FIELD_TERMS = {
     "검사관",
     "시료채취",
+    "소변",
+    "오줌",
+    "대변",
+    "화장실",
+    "굴절계",
+    "비중",
     "혈액",
     "새벽",
     "야간",

@@ -44,4 +44,5 @@ def request_to_drug_search_input(request: DrugSearchToolRequest) -> DrugSearchIn
         route=request.route,
         sport=request.sport,
         dose=request.dose,
+        drug_code=request.drug_code,
     )

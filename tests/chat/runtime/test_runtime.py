@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.chat.domain.drug_search.schemas import DrugSearchInput
+from app.chat.domain.drug_search.schemas import DrugCandidate, DrugRiskStatus, DrugSearchInput, DrugSearchResult, MatchType
 from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
 from app.chat.runtime import ChatEngine, ChatRequest, ChatRuntimeDependencies, run_chat
 
@@ -50,6 +50,24 @@ def test_run_chat_uses_graph_engine_by_default() -> None:
     assert response.retrieval_attempts == 1
     assert response.errors == []
     assert "확인" in response.answer
+
+
+def test_run_chat_exposes_kada_herbal_verification_unavailable() -> None:
+    def herbal_searcher(search_input: DrugSearchInput) -> DrugSearchResult:
+        return DrugSearchResult(
+            status=DrugRiskStatus.NEEDS_VERIFICATION,
+            input=search_input,
+            herbal_verification_unavailable=True,
+            recommended_action="생약성분 포함 의약품 금지여부 확인 불가",
+        )
+
+    response = run_chat(
+        ChatRequest(query="감초 먹어도 돼?", use_llm=False),
+        dependencies=ChatRuntimeDependencies(drug_searcher=herbal_searcher),
+    )
+
+    assert response.herbal_verification_unavailable is True
+    assert response.drug_detail is None
 
 
 def test_run_chat_applies_runtime_policy_when_options_are_omitted() -> None:
@@ -112,6 +130,62 @@ def test_run_chat_accepts_plain_string_and_drug_search_input() -> None:
     assert string_response.route == input_response.route
 
 
+
+def test_run_chat_preserves_selected_product_for_graph_drug_search() -> None:
+    seen_input: DrugSearchInput | None = None
+
+    def fake_drug_searcher(search_input: DrugSearchInput):
+        nonlocal seen_input
+        seen_input = search_input
+        from app.chat.domain.drug_search.schemas import DrugRiskStatus, DrugSearchResult
+
+        return DrugSearchResult(
+            status=DrugRiskStatus.NEEDS_VERIFICATION,
+            input=search_input,
+            recommended_action="KADA 결과를 확인하세요.",
+        )
+
+    run_chat(
+        ChatRequest(
+            query="경기 중 타이레놀 먹어도 돼?",
+            product_name="타이레놀8시간이알서방정",
+            use_llm=False,
+        ),
+        dependencies=ChatRuntimeDependencies(drug_searcher=fake_drug_searcher),
+    )
+
+    assert seen_input is not None
+    assert seen_input.product_name == "타이레놀8시간이알서방정"
+
+
+def test_run_chat_exposes_kada_product_candidates_for_ui_selection() -> None:
+    from app.chat.domain.drug_search.schemas import DrugRiskStatus, DrugSearchResult
+
+    def fake_drug_searcher(search_input: DrugSearchInput) -> DrugSearchResult:
+        return DrugSearchResult(
+            status=DrugRiskStatus.NEEDS_VERIFICATION,
+            input=search_input,
+            matched_candidates=[
+                DrugCandidate(
+                    name="타이레놀8시간이알서방정",
+                    match_type=MatchType.PRODUCT,
+                    ingredient_names=["Acetaminophen 325mg"],
+                    manufacturer="한국존슨앤드존슨판매",
+                )
+            ],
+            requires_product_selection=True,
+            recommended_action="정확한 제품을 선택하세요.",
+        )
+
+    response = run_chat(
+        ChatRequest(query="타이레놀 먹어도 돼?", use_llm=False),
+        dependencies=ChatRuntimeDependencies(drug_searcher=fake_drug_searcher),
+    )
+
+    assert response.requires_product_selection is True
+    assert response.product_candidates[0].name == "타이레놀8시간이알서방정"
+    assert response.product_candidates[0].ingredient_names == ["Acetaminophen 325mg"]
+
 def test_chat_request_validates_query_and_top_k() -> None:
     with pytest.raises(ValidationError):
         ChatRequest(query="")
@@ -121,3 +195,41 @@ def test_chat_request_validates_query_and_top_k() -> None:
 
     with pytest.raises(ValidationError):
         ChatRequest(query="질문", top_k=11)
+
+
+def test_run_chat_exposes_selected_kada_drug_detail_for_product_card() -> None:
+    from app.chat.domain.drug_search.schemas import KADADrugDetail, DrugRiskStatus, DrugSearchResult
+
+    def fake_drug_searcher(search_input: DrugSearchInput) -> DrugSearchResult:
+        assert search_input.drug_code == "2009092800048"
+        return DrugSearchResult(
+            status=DrugRiskStatus.LOW_RISK,
+            input=search_input,
+            selected_product_detail=KADADrugDetail(
+                drug_code="2009092800048",
+                product_name="스트렙실허니앤레몬트로키, 스트렙실오렌지트로키",
+                ingredients=["플루르비프로펜 8.75mg"],
+                in_competition_status="허용",
+                out_of_competition_status="허용",
+                pill_image_url="https://example.com/pill.jpg",
+                package_image_url="https://example.com/package.jpg",
+                dosage="필요시 3~6시간 간격으로 복용",
+                source_url="https://kada.health.kr/result_drug_kpic?drug_code=2009092800048&herbal=0",
+                retrieved_at="2026-07-23T00:00:00+00:00",
+            ),
+            recommended_action="KADA 결과를 확인하세요.",
+        )
+
+    response = run_chat(
+        ChatRequest(
+            query="경기 중 스트렙실 먹어도 돼?",
+            product_name="스트렙실허니앤레몬트로키",
+            drug_code="2009092800048",
+            use_llm=False,
+        ),
+        dependencies=ChatRuntimeDependencies(drug_searcher=fake_drug_searcher),
+    )
+
+    assert response.drug_detail is not None
+    assert response.drug_detail.in_competition_status == "허용"
+    assert response.drug_detail.pill_image_url == "https://example.com/pill.jpg"

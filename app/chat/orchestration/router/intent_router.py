@@ -2,6 +2,8 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
+from app.chat.domain.drug_search.schemas import DrugSearchInput
+
 
 class ChatRoute(StrEnum):
     RAG = "rag"
@@ -51,6 +53,8 @@ DRUG_CONTEXT_TERMS = {
     "코감기",
     "스프레이",
     "분사",
+    "분무",
+    "뿌려",
 }
 
 REGULATION_CONTEXT_TERMS = {
@@ -104,6 +108,27 @@ RAG_ONLY_TERMS = {
     "대리 신청",
     "신청 방법",
 }
+
+
+def route_search_input(search_input: DrugSearchInput) -> RouteDecision:
+    """Preserve a parsed user medicine term even when it is not in the local keyword list."""
+
+    decision = route_question(search_input.query)
+    if not (search_input.product_name or search_input.ingredient_name):
+        return decision
+    if decision.route is not ChatRoute.RAG:
+        return decision
+
+    normalized_query = normalize_query(search_input.query)
+    needs_regulation_context = bool(
+        find_terms(normalized_query, REGULATION_CONTEXT_TERMS | RAG_ONLY_TERMS)
+    )
+    candidate = search_input.product_name or search_input.ingredient_name
+    return RouteDecision(
+        route=ChatRoute.DRUG_SEARCH_WITH_RAG if needs_regulation_context else ChatRoute.DRUG_SEARCH,
+        reason="질문에서 추출한 제품명 또는 성분명을 KADA 약물검색으로 확인합니다.",
+        matched_terms=[candidate] if candidate else [],
+    )
 
 
 def route_question(query: str) -> RouteDecision:
