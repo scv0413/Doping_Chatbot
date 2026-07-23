@@ -101,6 +101,14 @@ def build_answer_target(
             "rewritten_query": result.rewritten_query,
             "source_ids": [match.source_id for match in result.retrieval_matches],
             "chunk_ids": [match.chunk_id for match in result.retrieval_matches],
+            "official_source_citations": [
+                {
+                    "source_id": match.metadata.official_source_id,
+                    "page": match.metadata.official_source_page,
+                }
+                for match in result.retrieval_matches
+                if match.metadata.official_source_id
+            ],
             "drug_status": result.drug_result.status.value if result.drug_result else None,
             "errors": [error.model_dump() for error in result.errors],
             "answer_chars": len(answer),
@@ -173,6 +181,45 @@ def citation_presence_evaluator(outputs: dict[str, Any], reference_outputs: dict
     }
 
 
+def reviewed_manual_official_citation_evaluator(
+    outputs: dict[str, Any],
+    reference_outputs: dict[str, Any],
+) -> dict[str, Any]:
+    del reference_outputs
+    reviewed_sources = [
+        source_id
+        for source_id in outputs.get("source_ids", [])
+        if isinstance(source_id, str) and source_id.endswith("_human_reviewed")
+    ]
+    if not reviewed_sources:
+        return {
+            "key": "answer_reviewed_manual_official_citation",
+            "score": 1,
+            "comment": "not_applicable:no_human_reviewed_source",
+        }
+
+    answer = str(outputs.get("answer", ""))
+    official_citations = list(outputs.get("official_source_citations", []))
+    valid_citations = [
+        citation
+        for citation in official_citations
+        if isinstance(citation, dict)
+        and isinstance(citation.get("source_id"), str)
+        and isinstance(citation.get("page"), int)
+        and f"`{citation['source_id']}`" in answer
+        and f"p.{citation['page']}" in answer
+    ]
+    score = int(len(valid_citations) >= len(reviewed_sources))
+    return {
+        "key": "answer_reviewed_manual_official_citation",
+        "score": score,
+        "comment": (
+            f"reviewed_sources={len(reviewed_sources)}, "
+            f"valid_official_citations={len(valid_citations)}"
+        ),
+    }
+
+
 def safety_disclaimer_evaluator(outputs: dict[str, Any], reference_outputs: dict[str, Any]) -> dict[str, Any]:
     del reference_outputs
     answer = str(outputs.get("answer", ""))
@@ -217,6 +264,7 @@ def run_langsmith_answer_eval(
             must_include_evaluator,
             must_not_include_evaluator,
             citation_presence_evaluator,
+            reviewed_manual_official_citation_evaluator,
             safety_disclaimer_evaluator,
             pipeline_error_evaluator,
         ],

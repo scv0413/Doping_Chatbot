@@ -37,3 +37,11 @@ uv run python -m app.chat.evals.langsmith_half_life_eval --top-k 3
 ```
 
 The release gate gives an executable local decision. LangSmith preserves experiment traces, latency, token/cost data, and comparison history.
+
+## Reviewed Korean Manual Citation Gate
+
+The LangSmith answer evaluator records `official_source_citations` from
+retrieval metadata. When any retrieved source ID ends in `_human_reviewed`, the
+`answer_reviewed_manual_official_citation` score requires an official source ID
+and page in both the structured trace and the rendered answer. The evaluator is
+not applicable until an approved human-reviewed source is indexed.

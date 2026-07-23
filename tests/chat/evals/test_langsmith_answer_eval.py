@@ -4,6 +4,7 @@ from app.chat.evals.langsmith_answer_eval import (
     build_answer_target,
     build_langsmith_examples,
     citation_presence_evaluator,
+    reviewed_manual_official_citation_evaluator,
     count_concept_hits,
     must_include_evaluator,
     must_not_include_evaluator,
@@ -98,3 +99,33 @@ def test_count_concept_hits_accepts_synonym_groups() -> None:
     groups = [["정부 보건기구", "정부 보건당국"], ["승인하지 않은", "승인되지 않은"]]
 
     assert count_concept_hits(answer, groups) == 2
+
+
+def test_reviewed_manual_evaluator_requires_official_source_in_answer_and_trace() -> None:
+    outputs = {
+        "answer": (
+            "## 근거\n"
+            "- ISTI Korean Human-Reviewed Guide (`wada_isti_ko_human_reviewed:5.3.5:c0`)\n"
+            "  - 원문: `wada_isti_2021_ko_en`, p.83"
+        ),
+        "source_ids": ["wada_isti_ko_human_reviewed"],
+        "official_source_citations": [
+            {"source_id": "wada_isti_2021_ko_en", "page": 83}
+        ],
+    }
+
+    result = reviewed_manual_official_citation_evaluator(outputs, {})
+
+    assert result["score"] == 1
+
+
+def test_reviewed_manual_evaluator_fails_without_official_page() -> None:
+    outputs = {
+        "answer": "## 근거\n- 검수 manual (`wada_isti_ko_human_reviewed:5.3.5:c0`)",
+        "source_ids": ["wada_isti_ko_human_reviewed"],
+        "official_source_citations": [],
+    }
+
+    result = reviewed_manual_official_citation_evaluator(outputs, {})
+
+    assert result["score"] == 0
