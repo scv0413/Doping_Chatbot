@@ -468,7 +468,7 @@ from pathlib import Path
 
 
 def test_readme_does_not_link_to_removed_chat_docs_directory() -> None:
-    assert "app/chat/docs/" not in Path("README.md").read_text(encoding="utf-8")
+    assert "docs/" not in Path("README.md").read_text(encoding="utf-8")
 ~~~
 
 Expected file: tests/test_documentation_paths.py
@@ -485,9 +485,9 @@ Expected: FAIL until README references are updated.
 
 ~~~bash
 mkdir -p docs/architecture docs/operations docs/evaluation local_archive/presentations
-git mv app/chat/docs/*.md docs/
-git mv app/chat/docs/rag_pipeline_presentation.html local_archive/presentations/
-git mv app/chat/docs/portfolio_walkthrough.html local_archive/presentations/
+git mv docs/*.md docs/
+git mv docs/rag_pipeline_presentation.html local_archive/presentations/
+git mv docs/portfolio_walkthrough.html local_archive/presentations/
 ~~~
 
 Before the Markdown move, classify each file by purpose and move it to exactly one of architecture, operations, or evaluation. Add local_archive/ to .gitignore before moving HTML. Update README and Markdown links using relative paths. Move remaining test files so every test path mirrors its implementation boundary.

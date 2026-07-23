@@ -40,7 +40,7 @@
 - Create: tests/preprocess/test_pdf_loader_ocr.py
 - Create: scripts/isti_ocr_smoke.py
 - Modify: .env.example
-- Create: app/chat/docs/isti-korean-ocr-operations.md
+- Create: docs/operations/isti-korean-ocr-operations.md
 
 ## Task 1: 페이지 품질 계약과 metadata
 
@@ -133,7 +133,7 @@ git commit -m "feat: add OCR page quality contract"
 - Create: app/preprocess/ocr/tesseract.py
 - Create: tests/preprocess/ocr/test_tesseract.py
 - Modify: .env.example
-- Create: app/chat/docs/isti-korean-ocr-operations.md
+- Create: docs/operations/isti-korean-ocr-operations.md
 
 **Interfaces:**
 - Produces: run_tesseract_ocr(page: fitz.Page, *, language: str = "kor+eng", dpi: int = 300) -> str.
@@ -196,7 +196,7 @@ Expected: mocked tests PASS. Tesseract가 아직 없더라도 단위 테스트�
 
 ~~~bash
 git add app/preprocess/ocr/tesseract.py tests/preprocess/ocr/test_tesseract.py \
-  .env.example app/chat/docs/isti-korean-ocr-operations.md
+  .env.example docs/operations/isti-korean-ocr-operations.md
 git commit -m "feat: add local Tesseract OCR adapter"
 ~~~
 
@@ -345,7 +345,7 @@ git commit -m "feat: apply OCR fallback in ISTI loader"
 
 **Files:**
 - Create: scripts/isti_ocr_smoke.py
-- Modify: app/chat/docs/isti-korean-ocr-operations.md
+- Modify: docs/operations/isti-korean-ocr-operations.md
 - Modify: tests/preprocess/ocr/test_tesseract.py
 
 **Interfaces:**
@@ -407,7 +407,7 @@ Expected: smoke는 읽을 수 있는 한국어 preview와 tesseract_ocr provenan
 - [ ] **Step 5: 커밋한다.**
 
 ~~~bash
-git add scripts/isti_ocr_smoke.py app/chat/docs/isti-korean-ocr-operations.md \
+git add scripts/isti_ocr_smoke.py docs/operations/isti-korean-ocr-operations.md \
   tests/preprocess/ocr/test_tesseract.py
 git commit -m "feat: add ISTI OCR smoke workflow"
 ~~~

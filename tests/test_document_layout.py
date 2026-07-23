@@ -1,0 +1,14 @@
+from pathlib import Path
+
+
+def test_documentation_uses_top_level_categories() -> None:
+    assert not Path("app/chat/docs").exists()
+
+    for category in ("architecture", "operations", "evaluation", "superpowers"):
+        assert Path("docs", category).is_dir()
+
+
+def test_local_archive_is_ignored_from_git() -> None:
+    gitignore = Path(".gitignore").read_text(encoding="utf-8")
+
+    assert "local_archive/" in gitignore

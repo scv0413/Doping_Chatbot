@@ -16,7 +16,7 @@ from app.chat.evals.langsmith_retrieval_eval import (
 )
 from app.chat.evals.retrieval_token_experiment import ExperimentConfig
 
-DEFAULT_OUTPUT_PATH = Path("app/chat/docs/langsmith-retrieval-vs-graph-comparison.md")
+DEFAULT_OUTPUT_PATH = Path("docs/evaluation/langsmith-retrieval-vs-graph-comparison.md")
 
 
 @dataclass(frozen=True)

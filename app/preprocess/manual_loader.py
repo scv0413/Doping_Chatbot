@@ -54,7 +54,7 @@ def build_manual_chunk_id(section_index: int) -> str:
 def load_manual_chunks(
     manual_path: Path | None = None,
 ) -> list[ManualChunkRecord]:
-    manual_path = manual_path or Path("app/chat/docs/field-response-manual.md")
+    manual_path = manual_path or Path("docs/architecture/field-response-manual.md")
     markdown_text = manual_path.read_text(encoding="utf-8")
     sections = split_manual_sections(markdown_text)
     chunks: list[ManualChunkRecord] = []

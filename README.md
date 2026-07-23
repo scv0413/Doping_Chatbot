@@ -24,27 +24,31 @@ KADA/WADA 도핑 관련 규정, 금지약물, 현장 대응 시나리오, 반감
 
 ```text
 app/
-  preprocess/             # PDF/manual source 전처리, page JSONL 생성, chunk 생성
+  core/
+    config.py             # 공통 설정과 data 경로
+  preprocess/
+    sources/              # source schema, manifest, inventory
+    pdf/                  # PDF loader와 inspector
+    transform/            # page JSONL, chunk, 결과 inspector
+    ocr/                  # OCR 품질 검사와 fallback
   chat/
-    retrieval/            # LangChain OpenAI embeddings + LangChain Chroma 검색
-    drug_search/          # KADA 약물검색 client/mock/formatter
-    pharmacology/         # 반감기와 약리정보 참고 계층
-    router/               # 질문 intent route 결정
-    answer/               # deterministic formatter + LangChain ChatOpenAI answer chain
-    policy/               # 6 rules, safety caveat, runtime policy
-    graph/                # LangGraph 실행 흐름과 deterministic tool plan
+    domain/               # retrieval, drug search, pharmacology, answer, policy
+    orchestration/        # router, pipeline, graph, agent
     tools/                # rag/drug/pharmacology tool request/output contract
+    interfaces/           # FastAPI, Gradio, FastMCP external adapters
     runtime.py            # Gradio/FastAPI 공통 entrypoint
-    api/                  # FastAPI, readiness, error response, JSON logging
-    ui/                   # Gradio MVP
     evals/                # LangSmith/retrieval/answer/half-life/field eval
-    docs/                 # 구현 판단, 운영, 평가 문서
 scripts/
   staging_smoke.py        # HTTP 기준 staging smoke 검증
-tests/                    # unit/integration/artifact tests
-data/                     # raw/processed/indexes, git 제외
+tests/
+  preprocess/             # 전처리 구조와 source inventory 검증
+  chat/                   # domain, orchestration, interfaces, tools, evals 검증
+data/
+  raw/ processed/ indexes/ operations/  # runtime data, git 제외
+docs/
+  architecture/ operations/ evaluation/ superpowers/
 logs/                     # 작업 과정 기록, git 제외
-local_archive/            # 발표용 HTML/학습 자료 보관, git 제외
+local_archive/            # presentations, learning 보관, git 제외
 ```
 
 ## Environment
@@ -92,6 +96,7 @@ uv run python -m app.preprocess.transform.chunker
 
 ```bash
 uv run python -m app.chat.domain.retrieval.indexer
+```
 
 Source 변경 audit 및 안전한 전체 재색인:
 
@@ -99,7 +104,6 @@ Source 변경 audit 및 안전한 전체 재색인:
 uv run python scripts/data_refresh.py
 # 검토 완료 후에만:
 uv run python scripts/data_refresh.py --apply
-```
 ```
 
 검색 확인:
@@ -216,14 +220,13 @@ Staging smoke:
 
 ```bash
 uv run python scripts/staging_smoke.py --base-url http://127.0.0.1:8000
+```
 
 Release quality gate (data/index가 준비된 staging 또는 release 후보 환경):
 
 ```bash
 uv run python scripts/release_quality_gate.py
 ```
-```
-
 LangSmith retrieval/tool eval:
 
 ```bash
@@ -239,7 +242,7 @@ uv run pytest tests/test_docker_artifacts.py
 최근 로컬 검증 기준:
 
 - `uv run ruff check app tests scripts`: pass
-- `uv run pytest`: 187 passed, 1 dependency warning
+- `uv run pytest`: 193 passed (2026-07-23 리팩터링 검증 시점)
 - Docker build: pass
 - Docker container non-root: pass, user id `999`
 - Docker `/health`: pass
@@ -275,4 +278,4 @@ uv run pytest tests/test_docker_artifacts.py
 
 ## Portfolio Notes
 
-발표용 HTML과 리허설 자료는 git에 올리지 않고 `local_archive/portfolio/`에 보관합니다. 구현과 직접 관련된 설계/운영 문서는 `app/chat/docs/`에 남깁니다.
+발표용 HTML은 `local_archive/presentations/`, 개인 학습/리허설 자료는 `local_archive/learning/`에 보관하며 Git에 올리지 않습니다. 구현과 직접 관련된 설계·운영·평가 문서는 `docs/`에 남깁니다.
