@@ -45,6 +45,18 @@ def test_answer_cases_convert_to_langsmith_io() -> None:
     assert answer_case_to_outputs(case)["expected_route"] == "rag"
 
 
+def test_isti_interpreter_notification_case_requires_contextual_guidance() -> None:
+    case = next(
+        case
+        for case in ANSWER_EVAL_CASES
+        if case.case_id == "isti_interpreter_third_party_notification"
+    )
+
+    assert case.expected_route == "rag"
+    assert ("제3자",) in case.must_include_groups
+    assert ("통역",) in case.must_include_groups
+    assert "항상 제3자에게 알려야" in case.must_not_include_terms
+
 def test_build_langsmith_examples_has_stable_ids() -> None:
     examples = build_langsmith_examples(ANSWER_EVAL_CASES[:1])
 

@@ -96,6 +96,20 @@ ANSWER_EVAL_CASES = [
         ),
         must_not_include_terms=("혈액검사는 무조건 거부", "소변으로 반드시 대체", "그냥 거부"),
     ),
+    AnswerEvalCase(
+        case_id="isti_interpreter_third_party_notification",
+        query="도핑검사 통지 전에 통역이나 제3자에게 먼저 알려야 하나요?",
+        expected_route="rag",
+        must_include_groups=(
+            ("제3자",),
+            ("통역",),
+            ("통지",),
+            ("미성년", "장애"),
+            ("기록",),
+            ("공식 문서", "원문", "WADA"),
+        ),
+        must_not_include_terms=("항상 제3자에게 알려야", "통역 없이 진행해야", "무조건 지연"),
+    ),
 ]
 
 
