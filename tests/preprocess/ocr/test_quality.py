@@ -20,3 +20,15 @@ def test_empty_text_is_rejected() -> None:
 
     assert report.status == PageQualityStatus.REJECTED
     assert report.reason == "empty_text"
+
+def test_korean_ocr_noise_tokens_require_review() -> None:
+    text = (
+        "선정된 At 통지를 받은 MA 일치하도록 해준 ㅅ/루채취기구 ㅅ/료재취요원 "
+        "SASS AL SACL If 0/2.8/ "
+    ) * 12
+
+    report = assess_text_quality(text, expects_korean=True)
+
+    assert report.status == PageQualityStatus.NEEDS_REVIEW
+    assert report.reason == "ocr_noise_token_ratio"
+    assert report.ocr_noise_ratio > 0.2
