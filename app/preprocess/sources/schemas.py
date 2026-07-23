@@ -75,6 +75,7 @@ class DocumentMetadata(BaseModel):
     page: int | None = None
     section: str | None = None
     language: Language = Language.KO
+    source_language: Language | None = None
     extraction_method: str = "text_layer"
     quality_status: PageQualityStatus = PageQualityStatus.ACCEPTED
     quality_reason: str | None = None

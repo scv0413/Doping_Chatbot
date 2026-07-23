@@ -89,3 +89,17 @@ def test_isti_even_page_inspection_reports_ocr_provenance(monkeypatch, tmp_path:
     assert decision["status"] == "loaded"
     assert decision["extraction_method"] == "tesseract_ocr"
     assert decision["quality_status"] == "accepted"
+
+
+def test_isti_odd_page_marks_english_source_language(monkeypatch, tmp_path: Path) -> None:
+    pdf_path = tmp_path / "isti-en.pdf"
+    document = fitz.open()
+    document.new_page()
+    document.new_page()
+    document.new_page()
+    document.save(pdf_path)
+    document.close()
+    metadata = DocumentMetadata(source_id="wada_isti_2021_ko_en", source_type=SourceType.PDF, title="ISTI", authority=Authority.WADA, document_type=DocumentType.TESTING_STANDARD, layout_type=LayoutType.MIXED_LANGUAGE, processing_status=ProcessingStatus.NEEDS_REVIEW, file_path=pdf_path, language=Language.MIXED)
+    monkeypatch.setattr("app.preprocess.pdf.loader.parse_pdf_span_lines", lambda page: [{"text": "English source text " * 10, "x0": 0, "y0": 0, "x1": 1, "y1": 1}])
+    chunk = load_pdf_pages(metadata, start_page=3, end_page=3)[0]
+    assert chunk.metadata.source_language == Language.EN

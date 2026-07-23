@@ -10,6 +10,7 @@ from app.preprocess.sources.schemas import (
     DocumentChunk,
     DocumentMetadata,
     DocumentType,
+    Language,
     LayoutType,
     ProcessingStatus,
     TocEntry,
@@ -460,6 +461,12 @@ def should_use_korean_ocr_fallback(metadata: DocumentMetadata, page_number: int)
     return metadata.source_id == ISTI_SOURCE_ID and page_number % 2 == 0
 
 
+def page_source_language(metadata: DocumentMetadata, page_number: int) -> Language:
+    if metadata.source_id == ISTI_SOURCE_ID:
+        return Language.EN if page_number % 2 else Language.KO
+    return metadata.language
+
+
 def provenance_update(result: PageExtractionResult | None) -> dict[str, Any]:
     if result is None:
         return {}
@@ -542,6 +549,7 @@ def load_pdf_pages(
                     "page": page_number,
                     "toc_pages": toc_pages,
                     "toc_entries": toc_entries,
+                    "source_language": page_source_language(metadata, page_number),
                     **provenance_update(extraction_result),
                 }
             )
