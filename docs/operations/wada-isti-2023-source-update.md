@@ -3,8 +3,9 @@
 ## Candidate
 
 The current official English candidate is the WADA International Standard for
-Testing and Investigations effective 1 January 2023. Store a browser-downloaded
-copy at:
+Testing and Investigations with `effective_date = 2023-01-01`. It is registered
+as `pending_download` in `data/operations/source-candidates.csv`, not as an
+active retrieval source. Store a browser-downloaded copy at:
 
 ```text
 data/raw/pdf/wada/wada_isti_2023_en.pdf

@@ -1,0 +1,2 @@
+candidate_id,source_id,title,authority,url,effective_date,language,document_type,status,notes
+wada_isti_2023_en,wada_isti_2023_en,WADA International Standard for Testing and Investigations 2023,WADA,https://www.wada-ama.org/sites/default/files/2022-09/2022_09_23_approved_ec_isti_2023_clean_final_compressed_1.pdf,2023-01-01,en,testing_standard,pending_download,Official English candidate. Download through a browser because automated acquisition received a WAF challenge. Do not add to source_manifest or index before content review.
