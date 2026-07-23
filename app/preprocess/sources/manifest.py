@@ -53,7 +53,9 @@ def load_source_manifest(manifest_path: Path) -> list[DocumentMetadata]:
                 processing_status=ProcessingStatus(row["processing_status"]),
                 file_name=file_path.name,
                 file_path=file_path,
+                url=row.get("url") or None,
                 language=Language(row["language"]),
+                effective_date=row.get("effective_date") or None,
                 version=row.get("year") or None,
                 toc_pages=parse_page_list(row.get("toc_pages")),
             )

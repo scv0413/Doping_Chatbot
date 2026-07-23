@@ -531,6 +531,9 @@ def load_pdf_pages(
             if not page_text:
                 continue
 
+            if is_year_only_noise(page_text):
+                continue
+
             extraction_result = None
             if should_use_korean_ocr_fallback(metadata, page_number):
                 extraction_result = resolve_page_text(
@@ -626,6 +629,17 @@ def inspect_pdf_page_loading(
                         "status": "skipped",
                         "reason": "empty_text",
                         "char_count": 0,
+                    }
+                )
+                continue
+
+            if is_year_only_noise(page_text):
+                results.append(
+                    {
+                        "page": page_number,
+                        "status": "skipped",
+                        "reason": "cover_page_noise",
+                        "char_count": len(page_text),
                     }
                 )
                 continue

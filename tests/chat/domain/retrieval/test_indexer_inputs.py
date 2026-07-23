@@ -8,6 +8,7 @@ def test_default_index_inputs_exclude_review_only_alignment_artifacts() -> None:
         "chunks.jsonl",
         "manual_chunks.jsonl",
         "approved_manual_chunks.jsonl",
+        "wada_isti_2023_chunks.jsonl",
     )
     assert "isti_section_alignment_candidates.jsonl" not in DEFAULT_CHUNK_FILE_NAMES
 

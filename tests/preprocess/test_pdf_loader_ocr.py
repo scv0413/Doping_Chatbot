@@ -103,3 +103,28 @@ def test_isti_odd_page_marks_english_source_language(monkeypatch, tmp_path: Path
     monkeypatch.setattr("app.preprocess.pdf.loader.parse_pdf_span_lines", lambda page: [{"text": "English source text " * 10, "x0": 0, "y0": 0, "x1": 1, "y1": 1}])
     chunk = load_pdf_pages(metadata, start_page=3, end_page=3)[0]
     assert chunk.metadata.source_language == Language.EN
+
+def test_year_only_cover_page_is_excluded_from_loaded_pages(tmp_path: Path) -> None:
+    pdf_path = tmp_path / "cover.pdf"
+    document = fitz.open()
+    page = document.new_page()
+    page.insert_text((72, 360), "2023")
+    document.save(pdf_path)
+    document.close()
+
+    metadata = DocumentMetadata(
+        source_id="wada_isti_2023_en",
+        source_type=SourceType.PDF,
+        title="ISTI 2023",
+        authority=Authority.WADA,
+        document_type=DocumentType.TESTING_STANDARD,
+        layout_type=LayoutType.STANDARD,
+        processing_status=ProcessingStatus.READY,
+        file_path=pdf_path,
+        language=Language.EN,
+    )
+
+    assert load_pdf_pages(metadata) == []
+    assert inspect_pdf_page_loading(metadata) == [
+        {"page": 1, "status": "skipped", "reason": "cover_page_noise", "char_count": 4}
+    ]

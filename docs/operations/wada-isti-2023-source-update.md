@@ -1,11 +1,9 @@
 # WADA ISTI 2023 Source Update
 
-## Candidate
+## Verified Source
 
 The current official English candidate is the WADA International Standard for
-Testing and Investigations with `effective_date = 2023-01-01`. It is registered
-as `pending_download` in `data/operations/source-candidates.csv`, not as an
-active retrieval source. Store a browser-downloaded copy at:
+Testing and Investigations with `effective_date = 2023-01-01`. It is registered as `downloaded_validated` in `data/operations/source-candidates.csv` and as a `ready` English source in `data/source_manifest.csv`. The browser-downloaded copy is stored at:
 
 ```text
 data/raw/pdf/wada/wada_isti_2023_en.pdf
@@ -32,17 +30,20 @@ The script accepts only HTTPS URLs from official WADA/KADA hosts, writes to a
 temporary file, and checks for a non-empty PDF signature before replacing the
 target path. It intentionally rejects WAF challenge pages and empty responses.
 
-## Current Limitation
+## Acquisition History
 
-The WADA host returned a CloudFront WAF challenge in this environment on
-2026-07-23, so automated acquisition was rejected without creating a source
-file. Download the official PDF in a normal browser session instead, then run
-the PDF inspection and source comparison before adding it to the manifest.
+The WADA host returned a CloudFront WAF challenge for automated acquisition on
+2026-07-23. The PDF was then downloaded in a normal browser session. Local
+validation confirmed a PDF signature, SHA-256 identity, 88 pages, a readable
+English text layer, and table-of-contents pages 3-5. The source is indexed as
+an official English original; it is not represented as an official Korean translation.
 
-## Required Review Before Use
+## Required Review Before Korean Guidance Changes
 
 1. Compare 2023 clauses that affect notification, blood collection, athlete
    identification, and overnight testing with the current 2021 source.
-2. Record changed or removed clause references in a human-reviewed manual.
-3. Add the new source to `data/source_manifest.csv` as `needs_review`.
-4. Mark it `ready` and reindex only after the content review is approved.
+2. Record changed or removed clause references in a human-reviewed Korean manual.
+3. Do not claim that the project Korean guidance is an official WADA Korean
+   translation.
+4. Update or supersede a reviewed Korean manual only after the changed clause
+   scope has been checked.
