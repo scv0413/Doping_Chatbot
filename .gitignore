@@ -24,3 +24,7 @@ logs/
 .idea/
 
 .worktrees/
+
+# Local human-review artifacts
+data/operations/*.jsonl
+data/operations/*_draft.md
