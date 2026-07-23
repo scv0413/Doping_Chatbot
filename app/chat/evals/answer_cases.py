@@ -110,6 +110,33 @@ ANSWER_EVAL_CASES = [
         ),
         must_not_include_terms=("항상 제3자에게 알려야", "통역 없이 진행해야", "무조건 지연"),
     ),
+    AnswerEvalCase(
+        case_id="isti_notification_signature",
+        query="도핑검사 통지서 서명을 거부하면 어떻게 돼?",
+        expected_route="rag",
+        must_include_groups=(
+            ("서명", "sign"),
+            ("거부", "회피", "refuses", "evades"),
+            ("규정 미준수", "Failure to Comply"),
+            ("기록", "보고", "document", "report"),
+            ("공식 문서", "원문", "WADA"),
+        ),
+        must_not_include_terms=("서명하지 말고 떠나", "서명 거부하면 끝", "검사를 무시"),
+    ),
+    AnswerEvalCase(
+        case_id="isti_station_delay_observation",
+        query="치료나 통역 때문에 도핑관리소 도착을 미뤄도 돼? 혼자 움직여도 돼?",
+        expected_route="rag",
+        must_include_groups=(
+            ("정당한 사유", "합리적인 요청", "delay"),
+            ("치료", "medical treatment"),
+            ("통역", "interpreter"),
+            ("지속 관찰", "continuous observation", "계속 관찰"),
+            ("DCO", "동행요원", "검사관"),
+            ("공식 문서", "원문", "WADA"),
+        ),
+        must_not_include_terms=("자유롭게 현장을 벗어나", "혼자 움직여도 된다", "무조건 지연 가능"),
+    ),
 ]
 
 

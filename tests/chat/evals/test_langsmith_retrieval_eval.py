@@ -116,3 +116,13 @@ def test_evaluators_score_expected_result() -> None:
     assert term_hit_evaluator(outputs, reference_outputs)["score"] == 1
     assert context_budget_evaluator(outputs, reference_outputs)["score"] == 1
     assert retrieval_quality_evaluator(outputs, reference_outputs)["score"] == 1
+
+
+def test_notification_rights_cases_cover_identity_signature_and_supervised_delay() -> None:
+    case_ids = {case.case_id for case in DEFAULT_CASES}
+
+    assert {
+        "isti_identity_documentation",
+        "isti_notification_signature",
+        "isti_station_delay_observation",
+    } <= case_ids

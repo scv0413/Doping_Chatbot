@@ -100,6 +100,30 @@ DEFAULT_CASES = [
         must_include_terms=("interpreter", "third party"),
         retrieval_terms=("Article 5.3.7", "interpreter", "third party", "notification"),
     ),
+    EvalCase(
+        case_id="isti_identity_documentation",
+        query="도핑 검사관이 본인 신분증을 보여줘야 하나요? 선수 신분도 확인해야 하나요?",
+        expected_route="rag",
+        expected_sources=("wada_isti_2023_ko_human_reviewed",),
+        must_include_terms=("신분", "권한"),
+        retrieval_terms=("Article 5.3.3", "Article 5.3.4", "official documentation", "identification", "identity"),
+    ),
+    EvalCase(
+        case_id="isti_notification_signature",
+        query="도핑검사 통지서 서명을 거부하면 어떻게 돼?",
+        expected_route="rag",
+        expected_sources=("wada_isti_2023_ko_human_reviewed",),
+        must_include_terms=("서명", "규정 미준수"),
+        retrieval_terms=("Article 5.4.3", "sign", "refuses", "evades", "Failure to Comply"),
+    ),
+    EvalCase(
+        case_id="isti_station_delay_observation",
+        query="치료나 통역 때문에 도핑관리소 도착을 미뤄도 돼? 혼자 움직여도 돼?",
+        expected_route="rag",
+        expected_sources=("wada_isti_2023_ko_human_reviewed",),
+        must_include_terms=("지연", "지속 관찰", "치료"),
+        retrieval_terms=("Article 5.4.4", "delay", "continuous observation", "medical treatment", "interpreter"),
+    ),
 ]
 
 

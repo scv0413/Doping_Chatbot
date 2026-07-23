@@ -1,4 +1,5 @@
 import argparse
+import re
 
 from langchain_core.documents import Document
 
@@ -6,9 +7,27 @@ from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
 from app.chat.domain.retrieval.vector_store import get_vector_store
 
 
+SECTION_REFERENCE_PATTERN = re.compile(r"\b(?:Article\s+)?(\d+(?:\.\d+)+)\b", re.IGNORECASE)
+CANDIDATE_MULTIPLIER = 5
+
+
+def rerank_section_matches(matches: list[RetrievalMatch], query: str) -> list[RetrievalMatch]:
+    """Prioritize an explicitly requested document section without changing normal search order."""
+
+    requested_sections = set(SECTION_REFERENCE_PATTERN.findall(query))
+    if not requested_sections:
+        return matches
+
+    return sorted(
+        matches,
+        key=lambda match: (match.metadata.section not in requested_sections, match.distance),
+    )
+
+
 def search(query: str, top_k: int = 5) -> list[RetrievalMatch]:
     vector_store = get_vector_store()
-    results = vector_store.similarity_search_with_score(query, k=top_k)
+    candidate_k = max(top_k, top_k * CANDIDATE_MULTIPLIER)
+    results = vector_store.similarity_search_with_score(query, k=candidate_k)
 
     matches: list[RetrievalMatch] = []
     for rank, (document, distance) in enumerate(results, start=1):
@@ -24,7 +43,11 @@ def search(query: str, top_k: int = 5) -> list[RetrievalMatch]:
             )
         )
 
-    return matches
+    ranked_matches = rerank_section_matches(matches, query)[:top_k]
+    return [
+        match.model_copy(update={"rank": rank})
+        for rank, match in enumerate(ranked_matches, start=1)
+    ]
 
 
 def get_chunk_id(document: Document) -> str:

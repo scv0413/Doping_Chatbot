@@ -44,6 +44,38 @@ TERM_EXPANSIONS = {
         "evasion",
         "failure to comply",
     ],
+    "서명": [
+        "통지서 서명",
+        "통지 확인",
+        "Article 5.4.3",
+        "Failure to Comply",
+        "document",
+        "report",
+    ],
+    "통지서": [
+        "통지서 서명",
+        "Article 5.4.3",
+        "Failure to Comply",
+    ],
+    "지연": [
+        "도핑관리소 보고 지연",
+        "일시 이탈",
+        "지속 관찰",
+        "continuous observation",
+        "Article 5.4.4",
+        "DCO",
+    ],
+    "미뤄": [
+        "도핑관리소 보고 지연",
+        "지속 관찰",
+        "continuous observation",
+        "Article 5.4.4",
+    ],
+    "혼자": [
+        "지속 관찰",
+        "continuous observation",
+        "Article 5.4.4",
+    ],
     "TUE": [
         "치료목적사용면책",
         "치료목적사용면책 신청",
