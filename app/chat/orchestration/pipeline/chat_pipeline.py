@@ -98,7 +98,7 @@ def run_chat_pipeline(
     pharmacology_info_tool_output: PharmacologyInfoToolOutput | None = None
     if should_run_pharmacology_info(resolved_input.query):
         pharmacology_result = run_pharmacology_step(
-            query=resolved_input.query,
+            query=build_pharmacology_query(resolved_input, drug_result),
             pharmacology_searcher=pharmacology_searcher,
             errors=errors,
         )
@@ -231,6 +231,25 @@ def build_pipeline_error(stage: str, exc: Exception) -> PipelineError:
         stage=stage,
         error_type=type(exc).__name__,
         message=str(exc),
+    )
+
+
+def build_pharmacology_query(
+    search_input: DrugSearchInput,
+    drug_result: DrugSearchResult | None = None,
+) -> str:
+    """Use KADA detail ingredients only after a concrete product is selected."""
+
+    detail = drug_result.selected_product_detail if drug_result else None
+    if detail is None:
+        return search_input.query
+
+    return "\n".join(
+        dict.fromkeys(
+            value
+            for value in [search_input.query, *detail.ingredients]
+            if value
+        )
     )
 
 

@@ -6,6 +6,7 @@ from app.chat.domain.drug_search.schemas import DrugSearchResult
 from app.chat.domain.pharmacology.service import should_run_pharmacology_info
 from app.chat.orchestration.pipeline.chat_pipeline import (
     QueryRewriter,
+    build_pharmacology_query,
     build_retrieval_query,
     normalize_pipeline_input,
     should_run_drug_search,
@@ -92,7 +93,9 @@ def run_agent_tool_plan(
             drug_result = DrugSearchResult.model_validate(output["result"])
 
     if "pharmacology_info_tool" in plan.tool_names:
-        arguments = {"query": search_input.query}
+        arguments = {
+            "query": build_pharmacology_query(search_input, drug_result)
+        }
         output = execute_mcp_tool("pharmacology_info_tool", arguments, dependencies=dependencies)
         tool_calls.append(ToolCallRecord(tool_name="pharmacology_info_tool", arguments=arguments, output=output))
 

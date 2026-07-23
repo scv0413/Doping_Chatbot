@@ -61,6 +61,13 @@ class DrugCandidateSummary(BaseModel):
     drug_code: str | None = None
 
 
+class PharmacologyIngredientSummary(BaseModel):
+    substance_name: str
+    typical_range: str | None = None
+    wider_range: str | None = None
+    interpretation_notes: list[str] = Field(default_factory=list)
+
+
 class ChatResponse(BaseModel):
     answer: str
     route: str
@@ -78,6 +85,7 @@ class ChatResponse(BaseModel):
     drug_detail: KADADrugDetail | None = None
     pharmacology_status: str | None = None
     pharmacology_substance: str | None = None
+    pharmacology_ingredients: list[PharmacologyIngredientSummary] = Field(default_factory=list)
     retrieval_attempts: int = 0
     retrieval_retry_reason: str | None = None
     planned_tool_names: list[str] = Field(default_factory=list)
@@ -201,11 +209,29 @@ def build_chat_response(
         drug_detail=result.drug_result.selected_product_detail if result.drug_result else None,
         pharmacology_status=result.pharmacology_result.status.value if result.pharmacology_result else None,
         pharmacology_substance=result.pharmacology_result.substance_name if result.pharmacology_result else None,
+        pharmacology_ingredients=build_pharmacology_ingredient_summaries(result.pharmacology_result),
         retrieval_attempts=result.retrieval_attempts,
         retrieval_retry_reason=result.retrieval_retry_reason,
         planned_tool_names=result.planned_tool_names,
         errors=[error.model_dump() for error in result.errors],
     )
+
+
+def build_pharmacology_ingredient_summaries(
+    pharmacology_result,
+) -> list[PharmacologyIngredientSummary]:
+    if pharmacology_result is None:
+        return []
+
+    return [
+        PharmacologyIngredientSummary(
+            substance_name=item.substance_name,
+            typical_range=item.half_life.typical_range if item.half_life else None,
+            wider_range=item.half_life.wider_range if item.half_life else None,
+            interpretation_notes=item.half_life.interpretation_notes if item.half_life else [],
+        )
+        for item in pharmacology_result.ingredient_results
+    ]
 
 
 def build_product_candidate_summaries(

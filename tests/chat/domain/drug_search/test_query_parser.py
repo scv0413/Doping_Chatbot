@@ -48,6 +48,13 @@ def test_extract_drug_query_does_not_treat_competition_period_as_a_product() -> 
     assert extraction.ingredient_name is None
 
 
+def test_extract_drug_query_uses_product_before_half_life_as_kada_candidate() -> None:
+    extraction = extract_drug_query("캐롤비콜드 반감기는?")
+
+    assert extraction.product_name == "캐롤비콜드"
+    assert extraction.ingredient_name is None
+
+
 def test_extract_drug_query_keeps_known_ingredient_as_ingredient() -> None:
     extraction = extract_drug_query("경기기간 중 아세트아미노펜 복용해도 돼?")
 

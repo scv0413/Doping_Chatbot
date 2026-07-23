@@ -5,6 +5,7 @@ from app.chat.runtime import (
     CitationSummary,
     DrugCandidateSummary,
     KADADrugDetail,
+    PharmacologyIngredientSummary,
 )
 from app.chat.interfaces.ui.gradio_app import (
     build_demo,
@@ -14,6 +15,7 @@ from app.chat.interfaces.ui.gradio_app import (
     build_selected_product_request,
     format_answer_for_ui,
     format_drug_detail_card,
+    format_product_pharmacology_card,
     respond,
 )
 
@@ -246,3 +248,60 @@ def test_format_answer_for_ui_hides_rag_text_after_selected_drug_card_is_availab
     )
 
     assert format_answer_for_ui(response) == ""
+
+
+def test_format_product_pharmacology_card_shows_each_registered_ingredient() -> None:
+    response = ChatResponse(
+        answer="긴 RAG 원문",
+        route="drug_search_with_rag",
+        query="캐롤비콜드 반감기는?",
+        engine=ChatEngine.GRAPH,
+        drug_detail=KADADrugDetail(
+            drug_code="2018062800008",
+            product_name="캐롤비콜드연질캡슐",
+            in_competition_status="금지",
+            out_of_competition_status="허용",
+            source_url="https://kada.health.kr/result_drug_kpic?drug_code=2018062800008&herbal=0",
+            retrieved_at="2026-07-24T00:00:00+00:00",
+        ),
+        pharmacology_status="found",
+        pharmacology_ingredients=[
+            PharmacologyIngredientSummary(
+                substance_name="pseudoephedrine",
+                typical_range="대략 4-8시간 범위",
+            ),
+            PharmacologyIngredientSummary(
+                substance_name="methylephedrine",
+                typical_range="대략 3-6시간 범위",
+            ),
+        ],
+    )
+
+    card = format_product_pharmacology_card(response)
+
+    assert "성분별 반감기 참고" in card
+    assert "pseudoephedrine" in card
+    assert "methylephedrine" in card
+    assert "출전 가능 여부를 확정하지 않습니다" in card
+    assert format_answer_for_ui(response) == ""
+
+
+def test_format_product_pharmacology_card_explains_when_no_registered_data_exists() -> None:
+    response = ChatResponse(
+        answer="긴 RAG 원문",
+        route="drug_search_with_rag",
+        query="알 수 없는 제품 반감기는?",
+        engine=ChatEngine.GRAPH,
+        drug_detail=KADADrugDetail(
+            drug_code="unknown",
+            product_name="알 수 없는 제품",
+            source_url="https://kada.health.kr/result_drug_kpic?drug_code=unknown&herbal=0",
+            retrieved_at="2026-07-24T00:00:00+00:00",
+        ),
+        pharmacology_status="not_found",
+    )
+
+    card = format_product_pharmacology_card(response)
+
+    assert "현재 등록된 성분별 반감기 근거가 없습니다" in card
+    assert "긴 RAG 원문" not in card

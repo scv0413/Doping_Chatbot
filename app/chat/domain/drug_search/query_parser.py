@@ -86,6 +86,9 @@ PRODUCT_BEFORE_USE_PATTERN = re.compile(
     r"(?P<product>[A-Za-z0-9가-힣]+)(?:을|를|은|는|이|가)?\s*"
     r"(?:먹어도|먹어|복용해도|복용|마셔도|마셔|사용해도|사용|뿌려도|뿌려|분사해도|분사|분무해도|분무)"
 )
+PRODUCT_BEFORE_HALF_LIFE_PATTERN = re.compile(
+    r"(?P<product>[A-Za-z0-9가-힣]+)(?:은|는|의|이|가)?\s*반감기"
+)
 
 
 def extract_drug_query(
@@ -135,7 +138,7 @@ def extract_by_rules(query: str) -> DrugQueryExtraction:
     product_name = next(
         (product for product in KNOWN_PRODUCT_NAMES if normalize_text(product) in normalized),
         None,
-    ) or extract_product_before_use(query) or extract_generic_medication_candidate(query)
+    ) or extract_product_before_use(query) or extract_product_before_half_life(query) or extract_generic_medication_candidate(query)
     if product_name:
         return DrugQueryExtraction(
             product_name=product_name,
@@ -167,6 +170,14 @@ def extract_product_before_use(query: str) -> str | None:
     if len(candidate) < 2 or normalize_text(candidate) in NON_MEDICATION_CANDIDATES:
         return None
     return candidate
+
+
+def extract_product_before_half_life(query: str) -> str | None:
+    match = PRODUCT_BEFORE_HALF_LIFE_PATTERN.search(query)
+    if match is None:
+        return None
+
+    return validate_generic_medication_candidate(match.group("product").strip())
 
 
 def extract_generic_medication_candidate(query: str) -> str | None:

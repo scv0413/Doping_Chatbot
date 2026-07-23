@@ -16,6 +16,7 @@ from app.chat.orchestration.pipeline.chat_pipeline import (
     QuestionRouter,
     Retriever,
     build_pipeline_error,
+    build_pharmacology_query,
     build_retrieval_query,
     normalize_pipeline_input,
     run_query_rewrite_step,
@@ -89,8 +90,13 @@ def build_drug_search_tool_request(search_input: DrugSearchInput) -> DrugSearchT
     )
 
 
-def build_pharmacology_tool_request(search_input: DrugSearchInput) -> PharmacologyInfoToolRequest:
-    return PharmacologyInfoToolRequest(query=search_input.query)
+def build_pharmacology_tool_request(
+    search_input: DrugSearchInput,
+    drug_result=None,
+) -> PharmacologyInfoToolRequest:
+    return PharmacologyInfoToolRequest(
+        query=build_pharmacology_query(search_input, drug_result)
+    )
 
 
 def build_rag_search_request(state: ChatGraphState, top_k: int) -> RagSearchRequest:
@@ -171,7 +177,10 @@ def build_pharmacology_node(dependencies: ChatGraphDependencies) -> Callable[[Ch
             run_graph_tool(
                 dependencies=dependencies,
                 name="pharmacology_info_tool",
-                arguments=build_pharmacology_tool_request(search_input).model_dump(mode="json"),
+                arguments=build_pharmacology_tool_request(
+                    search_input,
+                    state.get("drug_result"),
+                ).model_dump(mode="json"),
             )
         )
         append_tool_errors(

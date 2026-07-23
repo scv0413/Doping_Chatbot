@@ -41,3 +41,16 @@ def test_search_pharmacology_info_finds_in_competition_substances() -> None:
         assert result.half_life is not None
         assert result.sources
         assert "도핑" in " ".join(result.safety_notes)
+
+
+def test_search_pharmacology_info_returns_each_registered_ingredient() -> None:
+    result = search_pharmacology_info(
+        "Pseudoephedrine Hydrochloride와 DL-Methylephedrine Hydrochloride 반감기"
+    )
+
+    assert result.status is PharmacologyInfoStatus.FOUND
+    assert [item.substance_name for item in result.ingredient_results] == [
+        "pseudoephedrine",
+        "methylephedrine",
+    ]
+    assert all(item.half_life is not None for item in result.ingredient_results)

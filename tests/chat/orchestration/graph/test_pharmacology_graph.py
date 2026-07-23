@@ -1,6 +1,7 @@
-from app.chat.domain.drug_search.schemas import DrugRiskStatus, DrugSearchInput, DrugSearchResult
+from app.chat.domain.drug_search.schemas import DrugRiskStatus, DrugSearchInput, DrugSearchResult, KADADrugDetail
 from app.chat.orchestration.graph.graph import run_chat_graph
 from app.chat.domain.pharmacology.schemas import PharmacologyInfoResult
+from app.chat.domain.pharmacology.service import search_pharmacology_info
 from app.chat.domain.retrieval.schemas import RetrievalMatch, RetrievalMetadata
 from app.chat.orchestration.router.intent_router import ChatRoute
 
@@ -76,3 +77,47 @@ def test_graph_preserves_pharmacology_tool_error_stage() -> None:
     assert result.pharmacology_info_tool_output.errors[0].stage == "pharmacology_info"
     assert result.errors[0].stage == "pharmacology_info"
     assert result.errors[0].error_type == "RuntimeError"
+
+
+def test_graph_uses_selected_kada_product_ingredients_for_half_life_lookup() -> None:
+    captured_queries: list[str] = []
+
+    def selected_product_searcher(search_input: DrugSearchInput) -> DrugSearchResult:
+        return DrugSearchResult(
+            status=DrugRiskStatus.PROHIBITED_POSSIBLE,
+            input=search_input,
+            selected_product_detail=KADADrugDetail(
+                drug_code="2018062800008",
+                product_name="캐롤비콜드연질캡슐",
+                ingredients=[
+                    "슈도에페드린염산염 [Pseudoephedrine Hydrochloride]",
+                    "DL-메틸에페드린염산염 [DL-Methylephedrine Hydrochloride]",
+                ],
+                in_competition_status="금지",
+                out_of_competition_status="허용",
+                source_url="https://kada.health.kr/result_drug_kpic?drug_code=2018062800008&herbal=0",
+                retrieved_at="2026-07-24T00:00:00+00:00",
+            ),
+            recommended_action="KADA 상세정보 확인",
+        )
+
+    def capture_pharmacology_query(query: str):
+        captured_queries.append(query)
+        return search_pharmacology_info(query)
+
+    result = run_chat_graph(
+        "캐롤비콜드 반감기는?",
+        top_k=3,
+        use_llm=False,
+        drug_searcher=selected_product_searcher,
+        pharmacology_searcher=capture_pharmacology_query,
+        retriever=fake_retriever,
+        query_rewriter=lambda query: query,
+    )
+
+    assert result.decision.route is ChatRoute.DRUG_SEARCH_WITH_RAG
+    assert captured_queries
+    assert "Pseudoephedrine Hydrochloride" in captured_queries[0]
+    assert "Methylephedrine Hydrochloride" in captured_queries[0]
+    assert result.pharmacology_result is not None
+    assert result.pharmacology_result.status.value == "found"

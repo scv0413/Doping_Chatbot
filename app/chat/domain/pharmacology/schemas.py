@@ -23,6 +23,13 @@ class HalfLifeInfo(BaseModel):
     interpretation_notes: list[str] = Field(default_factory=list)
 
 
+class PharmacologyIngredientResult(BaseModel):
+    substance_name: str
+    matched_terms: list[str] = Field(default_factory=list)
+    half_life: HalfLifeInfo | None = None
+    sources: list[PharmacologySource] = Field(default_factory=list)
+
+
 class PharmacologyInfoResult(BaseModel):
     status: PharmacologyInfoStatus
     query: str
@@ -32,3 +39,4 @@ class PharmacologyInfoResult(BaseModel):
     recommended_action: str
     safety_notes: list[str] = Field(default_factory=list)
     sources: list[PharmacologySource] = Field(default_factory=list)
+    ingredient_results: list[PharmacologyIngredientResult] = Field(default_factory=list)

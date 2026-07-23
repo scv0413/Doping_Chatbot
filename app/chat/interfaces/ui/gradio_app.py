@@ -143,6 +143,57 @@ def format_drug_images(detail: KADADrugDetail) -> str:
     return '<div class="drug-card__images">' + "".join(images) + "</div>"
 
 
+def format_product_pharmacology_card(response: ChatResponse) -> str:
+    if response.drug_detail is None or response.pharmacology_status is None:
+        return ""
+
+    if response.pharmacology_status != "found" or not response.pharmacology_ingredients:
+        return """
+<section class="drug-card__pharmacology drug-card__pharmacology--missing">
+  <h3>성분별 반감기 참고</h3>
+  <p>현재 등록된 성분별 반감기 근거가 없습니다.</p>
+  <p>반감기 정보가 없다는 뜻이 복용 가능하다는 뜻은 아닙니다. 제품 성분표와 KADA 검색 결과를 팀 닥터, 약사 또는 도핑 담당자와 확인하세요.</p>
+</section>
+""".strip()
+
+    items = []
+    for ingredient in response.pharmacology_ingredients:
+        typical_range = escape(ingredient.typical_range or "현재 등록된 일반적 범위 없음")
+        wider_range = (
+            f"<p>변동 가능 범위: {escape(ingredient.wider_range)}</p>"
+            if ingredient.wider_range
+            else ""
+        )
+        items.append(
+            f"""
+  <article class="drug-card__pharmacology-item">
+    <h4>{escape(ingredient.substance_name)}</h4>
+    <p>일반적 반감기 참고: {typical_range}</p>
+    {wider_range}
+  </article>
+""".strip()
+        )
+
+    return f"""
+<section class="drug-card__pharmacology">
+  <h3>성분별 반감기 참고</h3>
+  {''.join(items)}
+  <p class="drug-card__pharmacology-caveat">반감기는 참고용이며 도핑검사 검출 가능 시간이나 출전 가능 여부를 확정하지 않습니다.</p>
+</section>
+""".strip()
+
+
+def format_selected_product_card(response: ChatResponse) -> str:
+    return "\n".join(
+        part
+        for part in [
+            format_drug_detail_card(response.drug_detail),
+            format_product_pharmacology_card(response),
+        ]
+        if part
+    )
+
+
 def format_answer_for_ui(response: ChatResponse) -> str:
     if response.herbal_verification_unavailable:
         return """
@@ -185,7 +236,10 @@ def response_to_ui_updates(response: ChatResponse):
     return (
         format_answer_for_ui(response),
         [candidate_to_state(candidate) for candidate in candidates] if show_candidates else [],
-        gr.update(value=format_drug_detail_card(response.drug_detail), visible=response.drug_detail is not None),
+        gr.update(
+            value=format_selected_product_card(response),
+            visible=response.drug_detail is not None,
+        ),
         *product_button_updates(candidates if show_candidates else []),
     )
 
@@ -291,6 +345,13 @@ DRUG_CARD_CSS = """
 .drug-card__notice { padding: 1rem; background: #f3a62f; color: #111827; }
 .drug-card__notice h3 { margin: 0 0 .4rem; font-size: 1rem; color: #111827; }
 .drug-card__notice p { margin: 0; color: #111827; font-weight: 600; }
+.drug-card__pharmacology { padding: 1rem; border-top: 1px solid #e3e8ef; background: #f7fbff; color: #111827; }
+.drug-card__pharmacology--missing { background: #fff8ed; }
+.drug-card__pharmacology h3 { margin: 0 0 .75rem; font-size: 1rem; color: #111827; }
+.drug-card__pharmacology-item { border-top: 1px solid #dbe7f1; padding: .75rem 0; }
+.drug-card__pharmacology-item:first-of-type { border-top: 0; padding-top: 0; }
+.drug-card__pharmacology-item h4, .drug-card__pharmacology-item p, .drug-card__pharmacology-caveat { margin: .25rem 0; color: #111827; }
+.drug-card__pharmacology-caveat { margin-top: .75rem; font-weight: 600; }
 .drug-card__images { display: flex; flex-wrap: wrap; gap: 1rem; padding: 1rem; border-top: 1px solid #e3e8ef; }
 .drug-card__images figure { margin: 0; width: min(260px, 100%); }
 .drug-card__images img { width: 100%; max-height: 220px; object-fit: contain; background: #f5f7fa; }
