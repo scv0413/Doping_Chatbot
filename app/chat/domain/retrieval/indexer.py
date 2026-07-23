@@ -19,6 +19,15 @@ DEFAULT_CHUNK_FILE_NAMES = (
     "approved_manual_chunks.jsonl",
 )
 
+HUMAN_REVIEWED_SOURCE_SUFFIX = "_human_reviewed"
+REQUIRED_HUMAN_REVIEWED_METADATA = (
+    "review_status",
+    "reviewed_by",
+    "reviewed_at",
+    "official_source_id",
+    "official_source_page",
+)
+
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
@@ -62,6 +71,27 @@ def validate_chunk_records(records: list[dict[str, Any]]) -> None:
 
     if duplicate_count:
         raise ValueError(f"Duplicate chunk_id count: {duplicate_count}")
+
+    for record in records:
+        validate_human_reviewed_manual_metadata(record["metadata"])
+
+
+def validate_human_reviewed_manual_metadata(metadata: dict[str, Any]) -> None:
+    source_id = metadata.get("source_id")
+    if not isinstance(source_id, str) or not source_id.endswith(HUMAN_REVIEWED_SOURCE_SUFFIX):
+        return
+
+    missing_fields = [
+        field_name
+        for field_name in REQUIRED_HUMAN_REVIEWED_METADATA
+        if not metadata.get(field_name)
+    ]
+    if missing_fields:
+        missing = ", ".join(missing_fields)
+        raise ValueError(f"Human-reviewed manual requires approved metadata: {missing}")
+
+    if metadata["review_status"] != "approved":
+        raise ValueError("Human-reviewed manual requires review_status=approved.")
 
 
 def records_to_documents(records: list[dict[str, Any]]) -> list[Document]:
