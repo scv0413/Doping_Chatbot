@@ -3,6 +3,8 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
+from app.preprocess.ocr.quality import PageQualityStatus
+
 
 class SourceType(StrEnum):
     PDF = "pdf"
@@ -73,6 +75,10 @@ class DocumentMetadata(BaseModel):
     page: int | None = None
     section: str | None = None
     language: Language = Language.KO
+    extraction_method: str = "text_layer"
+    quality_status: PageQualityStatus = PageQualityStatus.ACCEPTED
+    quality_reason: str | None = None
+    ocr_language: str | None = None
     toc_pages: list[int] = Field(default_factory=list)
     toc_entries: list[TocEntry] = Field(default_factory=list)
 
