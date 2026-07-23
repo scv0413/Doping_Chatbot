@@ -4,6 +4,7 @@ from typing import Any
 
 import fitz
 
+from app.preprocess.ocr.fallback import PageExtractionResult, resolve_page_text
 from app.preprocess.sources.manifest import load_source_manifest
 from app.preprocess.sources.schemas import (
     DocumentChunk,
@@ -453,6 +454,24 @@ def is_low_quality_text(text: str, min_length: int = 100) -> bool:
     return False
 
 
+ISTI_SOURCE_ID = "wada_isti_2021_ko_en"
+
+def should_use_korean_ocr_fallback(metadata: DocumentMetadata, page_number: int) -> bool:
+    return metadata.source_id == ISTI_SOURCE_ID and page_number % 2 == 0
+
+
+def provenance_update(result: PageExtractionResult | None) -> dict[str, Any]:
+    if result is None:
+        return {}
+
+    return {
+        "extraction_method": result.extraction_method,
+        "quality_status": result.quality_report.status,
+        "quality_reason": result.quality_report.reason,
+        "ocr_language": result.ocr_language,
+    }
+
+
 def load_pdf_pages(
     metadata: DocumentMetadata,
     start_page: int = 1,
@@ -505,7 +524,17 @@ def load_pdf_pages(
             if not page_text:
                 continue
 
-            if is_low_quality_text(page_text):
+            extraction_result = None
+            if should_use_korean_ocr_fallback(metadata, page_number):
+                extraction_result = resolve_page_text(
+                    page,
+                    text_layer_text=page_text,
+                    expects_korean=True,
+                )
+                if extraction_result.text is None:
+                    continue
+                page_text = extraction_result.text
+            elif is_low_quality_text(page_text):
                 continue
 
             page_metadata = metadata.model_copy(
@@ -513,6 +542,7 @@ def load_pdf_pages(
                     "page": page_number,
                     "toc_pages": toc_pages,
                     "toc_entries": toc_entries,
+                    **provenance_update(extraction_result),
                 }
             )
 
