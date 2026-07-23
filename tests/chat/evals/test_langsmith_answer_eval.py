@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 from app.chat.evals.answer_cases import ANSWER_EVAL_CASES, answer_case_to_inputs, answer_case_to_outputs
 from app.chat.evals.langsmith_answer_eval import (
     build_answer_example_id,
@@ -11,6 +13,7 @@ from app.chat.evals.langsmith_answer_eval import (
     pipeline_error_evaluator,
     route_match_evaluator,
     safety_disclaimer_evaluator,
+    upsert_dataset_examples,
 )
 from app.chat.orchestration.pipeline.chat_pipeline import ChatPipelineResult
 from app.chat.orchestration.router.intent_router import ChatRoute, RouteDecision
@@ -56,6 +59,39 @@ def test_isti_interpreter_notification_case_requires_contextual_guidance() -> No
     assert ("제3자",) in case.must_include_groups
     assert ("통역",) in case.must_include_groups
     assert "항상 제3자에게 알려야" in case.must_not_include_terms
+
+class FakeAnswerEvalClient:
+    def __init__(self) -> None:
+        self.updated: list[dict] = []
+        self.created: list[dict] = []
+
+    def read_dataset(self, dataset_name: str) -> SimpleNamespace:
+        assert dataset_name == "test-answer-dataset"
+        return SimpleNamespace(id="dataset-id")
+
+    def list_examples(self, dataset_id: str):
+        assert dataset_id == "dataset-id"
+        return iter([SimpleNamespace(id="remote-definition-s0", metadata={"case_id": "definition_s0"})])
+
+    def update_example(self, example_id: str, **kwargs) -> None:
+        self.updated.append({"example_id": example_id, **kwargs})
+
+    def create_examples(self, **kwargs) -> None:
+        self.created.append(kwargs)
+
+
+def test_upsert_dataset_examples_creates_new_case_without_updating_missing_id() -> None:
+    client = FakeAnswerEvalClient()
+    cases = [
+        ANSWER_EVAL_CASES[0],
+        next(case for case in ANSWER_EVAL_CASES if case.case_id == "isti_interpreter_third_party_notification"),
+    ]
+
+    upsert_dataset_examples(client=client, dataset_name="test-answer-dataset", cases=cases)
+
+    assert client.updated[0]["example_id"] == "remote-definition-s0"
+    assert client.created[0]["examples"][0]["metadata"]["case_id"] == "isti_interpreter_third_party_notification"
+
 
 def test_build_langsmith_examples_has_stable_ids() -> None:
     examples = build_langsmith_examples(ANSWER_EVAL_CASES[:1])

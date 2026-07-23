@@ -62,18 +62,24 @@ def upsert_dataset_examples(
 ) -> object | None:
     dataset = get_or_create_dataset(client=client, dataset_name=dataset_name)
     examples = build_langsmith_examples(cases)
-    try:
-        return client.create_examples(
-            dataset_name=dataset_name,
-            examples=examples,
-        )
-    except Exception as exc:
-        if "already exists" not in str(exc) and "Conflict" not in type(exc).__name__:
-            raise
+    existing_examples = {
+        str(example.metadata.get("case_id")): example.id
+        for example in client.list_examples(dataset_id=getattr(dataset, "id", None))
+        if isinstance(example.metadata, dict) and example.metadata.get("case_id")
+    }
 
     for example in examples:
+        case_id = str(example["metadata"]["case_id"])
+        existing_id = existing_examples.get(case_id)
+        if existing_id is None:
+            client.create_examples(
+                dataset_id=getattr(dataset, "id", None),
+                examples=[example],
+            )
+            continue
+
         client.update_example(
-            example_id=example["id"],
+            example_id=existing_id,
             inputs=example["inputs"],
             outputs=example["outputs"],
             metadata=example["metadata"],
