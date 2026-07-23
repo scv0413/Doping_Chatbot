@@ -38,3 +38,18 @@ uv run python scripts/isti_section_alignment.py \
 
 The output path is intentionally outside `data/processed/`; it is a local
 review artifact, not an indexing input.
+
+## Human Review Handoff
+
+Create a local review draft from the candidate artifact:
+
+```bash
+uv run python scripts/isti_manual_review_template.py \
+  --candidates-path data/operations/isti_section_alignment_candidates.jsonl \
+  --output-path data/operations/isti_korean_manual_review_draft.md
+```
+
+The generated file has `review-status: draft` and is never an indexing input.
+After review, create a separate manual Korean source with its reviewer,
+approval date, English-page citation, and reviewed Korean text. Only that
+approved manual source may enter the normal manual preprocessing flow.
