@@ -46,3 +46,12 @@ def test_indexer_accepts_complete_human_reviewed_manual_metadata() -> None:
     ]
 
     validate_chunk_records(records)
+
+def test_rewrite_query_expands_korean_interpreter_notification_terms() -> None:
+    from app.chat.domain.retrieval.query_rewriter import rewrite_query
+
+    rewritten = rewrite_query("도핑검사 통지 전에 통역이나 제3자에게 먼저 알려야 하나요?")
+
+    assert "interpreter" in rewritten
+    assert "third party" in rewritten
+    assert "Article 5.3.7" in rewritten

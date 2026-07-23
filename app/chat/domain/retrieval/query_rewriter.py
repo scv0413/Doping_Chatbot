@@ -50,6 +50,24 @@ TERM_EXPANSIONS = {
         "Therapeutic Use Exemption",
         "Therapeutic Use Exemption application",
     ],
+    "통역": [
+        "interpreter",
+        "Article 5.3.7",
+        "third party",
+        "notification",
+    ],
+    "제3자": [
+        "third party",
+        "prior notification",
+        "Article 5.3.7",
+        "interpreter",
+    ],
+    "통지": [
+        "notification",
+        "prior notification",
+        "Article 5.3.7",
+        "DCO",
+    ],
     "대리": [
         "위임받은 선수지원요원",
         "선수지원요원",

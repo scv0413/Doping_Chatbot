@@ -92,6 +92,14 @@ DEFAULT_CASES = [
         must_include_terms=("interpreter", "third party"),
         retrieval_terms=("Article 5.3.7", "interpreter", "third party", "notification"),
     ),
+    EvalCase(
+        case_id="isti_2023_interpreter_notification_ko",
+        query="도핑검사 통지 전에 통역이나 제3자에게 먼저 알려야 하나요?",
+        expected_route="rag",
+        expected_sources=("wada_isti_2023_en",),
+        must_include_terms=("interpreter", "third party"),
+        retrieval_terms=("Article 5.3.7", "interpreter", "third party", "notification"),
+    ),
 ]
 
 
