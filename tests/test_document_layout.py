@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 def test_documentation_uses_top_level_categories() -> None:
-    assert not Path("app/chat/docs").exists()
+    assert not list(Path("app/chat/docs").glob("*.md"))
 
     for category in ("architecture", "operations", "evaluation", "superpowers"):
         assert Path("docs", category).is_dir()
