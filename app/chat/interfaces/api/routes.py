@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.chat.api.dependencies import ChatService, get_chat_service
-from app.chat.api.readiness import ReadinessResponse, build_readiness_response
-from app.chat.api.security import (
+from app.chat.interfaces.api.dependencies import ChatService, get_chat_service
+from app.chat.interfaces.api.readiness import ReadinessResponse, build_readiness_response
+from app.chat.interfaces.api.security import (
     AuthenticatedPrincipal,
     UserRole,
     enforce_rate_limit,

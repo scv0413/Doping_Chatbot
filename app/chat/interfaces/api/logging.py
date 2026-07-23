@@ -11,7 +11,7 @@ from fastapi import Request, Response
 REQUEST_ID_HEADER = "X-Request-ID"
 request_id_context: ContextVar[str | None] = ContextVar("request_id", default=None)
 
-logger = logging.getLogger("app.chat.api")
+logger = logging.getLogger("app.chat.interfaces.api")
 
 
 class JsonLogFormatter(logging.Formatter):

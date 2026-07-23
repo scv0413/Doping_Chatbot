@@ -2,7 +2,7 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from app.chat.mcp.server_adapter import call_tool
+from app.chat.interfaces.mcp.server_adapter import call_tool
 
 SERVER_NAME = "doping-chatbot-mcp"
 SERVER_HOST = "127.0.0.1"

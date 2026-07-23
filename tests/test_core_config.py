@@ -1,6 +1,11 @@
-from app.core.config import settings as legacy_settings
-from app.core.config import settings
+from pathlib import Path
+
+from app.core.config import Settings, settings
 
 
-def test_legacy_config_reexports_canonical_settings() -> None:
-    assert legacy_settings is settings
+def test_canonical_settings_are_available() -> None:
+    assert isinstance(settings, Settings)
+
+
+def test_legacy_chat_config_module_is_removed() -> None:
+    assert not Path("app/chat/config.py").exists()

@@ -1,5 +1,5 @@
 from app.chat.runtime import ChatEngine, ChatRequest, ChatResponse, CitationSummary
-from app.chat.ui.gradio_app import build_demo, format_citations, format_metadata, respond
+from app.chat.interfaces.ui.gradio_app import build_demo, format_citations, format_metadata, respond
 
 
 def fake_runner(request: ChatRequest) -> ChatResponse:

@@ -36,7 +36,7 @@ uv run python -m app.chat.domain.retrieval.indexer
 서버 실행:
 
 ```bash
-uv run uvicorn app.chat.api.main:app --host 127.0.0.1 --port 8000
+uv run uvicorn app.chat.interfaces.api.main:app --host 127.0.0.1 --port 8000
 ```
 
 확인:
@@ -65,7 +65,7 @@ curl -X POST http://127.0.0.1:8000/api/v1/chat-responses \
 ## 4. Gradio 시연
 
 ```bash
-uv run python -m app.chat.ui.gradio_app --server-name 127.0.0.1 --server-port 7860
+uv run python -m app.chat.interfaces.ui.gradio_app --server-name 127.0.0.1 --server-port 7860
 ```
 
 브라우저에서 접속:
@@ -171,7 +171,7 @@ uv run python -m app.chat.evals.langsmith_tool_eval --top-k 3 --skip-dataset-upl
 FastMCP server 실행:
 
 ```bash
-uv run python -m app.chat.mcp.fastmcp_server
+uv run python -m app.chat.interfaces.mcp.fastmcp_server
 ```
 
 기본 연결 URL:

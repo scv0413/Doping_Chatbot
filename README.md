@@ -114,13 +114,13 @@ uv run python -m app.chat.domain.retrieval.retrieval_inspector
 API:
 
 ```bash
-uv run uvicorn app.chat.api.main:app --host 127.0.0.1 --port 8000
+uv run uvicorn app.chat.interfaces.api.main:app --host 127.0.0.1 --port 8000
 ```
 
 Gradio:
 
 ```bash
-uv run python -m app.chat.ui.gradio_app --server-name 127.0.0.1 --server-port 7860
+uv run python -m app.chat.interfaces.ui.gradio_app --server-name 127.0.0.1 --server-port 7860
 ```
 
 Runtime inspector:
@@ -152,7 +152,7 @@ curl -X POST http://127.0.0.1:8000/api/v1/debug/chat-responses \
 FastMCP 기반 MCP server entrypoint를 제공합니다. 기본 transport는 streamable HTTP이며 MCP endpoint는 `/mcp`입니다. FastAPI 기본 포트와 충돌하지 않도록 로컬 기본 포트는 `8012`를 사용합니다.
 
 ```bash
-uv run python -m app.chat.mcp.fastmcp_server
+uv run python -m app.chat.interfaces.mcp.fastmcp_server
 ```
 
 MCP Inspector 또는 MCP client에서 다음 URL로 연결합니다.

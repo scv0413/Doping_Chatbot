@@ -1,6 +1,6 @@
 import asyncio
 
-from app.chat.mcp.fastmcp_server import (
+from app.chat.interfaces.mcp.fastmcp_server import (
     SERVER_HOST,
     SERVER_NAME,
     SERVER_PORT,

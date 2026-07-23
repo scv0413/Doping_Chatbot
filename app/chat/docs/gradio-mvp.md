@@ -17,7 +17,7 @@ Gradio UI
 
 ## Files
 
-- `app/chat/ui/gradio_app.py`
+- `app/chat/interfaces/ui/gradio_app.py`
   - Gradio Blocks UI
   - `respond` 함수
   - `build_demo` 함수
@@ -55,7 +55,7 @@ gradio>=5.0.0,<6.0.0
 ## Run
 
 ```bash
-uv run python -u -m app.chat.ui.gradio_app --server-port 7861
+uv run python -u -m app.chat.interfaces.ui.gradio_app --server-port 7861
 ```
 
 확인된 실행 로그:

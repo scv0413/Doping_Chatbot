@@ -59,8 +59,8 @@ FastAPI/Starlette HTTPException 계열이다. 예를 들어 존재하지 않는 
 ## 구현 파일
 
 ```text
-app/chat/api/errors.py
-app/chat/api/main.py
+app/chat/interfaces/api/errors.py
+app/chat/interfaces/api/main.py
 tests/chat/api/test_api.py
 ```
 

@@ -7,9 +7,9 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.chat.api.logging import REQUEST_ID_HEADER, get_current_request_id
+from app.chat.interfaces.api.logging import REQUEST_ID_HEADER, get_current_request_id
 
-logger = logging.getLogger("app.chat.api.errors")
+logger = logging.getLogger("app.chat.interfaces.api.errors")
 
 
 class ApiErrorBody(BaseModel):

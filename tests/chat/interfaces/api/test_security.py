@@ -1,8 +1,8 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app.chat.api.dependencies import get_chat_service
-from app.chat.api.main import create_app
+from app.chat.interfaces.api.dependencies import get_chat_service
+from app.chat.interfaces.api.main import create_app
 from app.core.config import settings
 from app.chat.runtime import ChatEngine, ChatRequest, ChatResponse
 
@@ -27,7 +27,7 @@ def build_client() -> TestClient:
 
 @pytest.fixture(autouse=True)
 def security_settings(monkeypatch: pytest.MonkeyPatch) -> None:
-    from app.chat.api.security import rate_limiter
+    from app.chat.interfaces.api.security import rate_limiter
 
     monkeypatch.setattr(settings, "api_auth_enabled", True)
     monkeypatch.setattr(

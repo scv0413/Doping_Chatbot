@@ -3,7 +3,7 @@ from typing import Any
 import pytest
 
 from app.chat.orchestration.graph.nodes import ChatGraphDependencies, build_retrieve_node, build_rewrite_node, build_route_node
-from app.chat.mcp.client_executor import MCPHTTPToolExecutor, build_mcp_client_error_payload
+from app.chat.interfaces.mcp.client_executor import MCPHTTPToolExecutor, build_mcp_client_error_payload
 
 
 async def fake_async_caller(url: str, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -75,7 +75,7 @@ def test_build_mcp_client_error_payload_matches_tool_error_shape() -> None:
 
 
 def test_mcp_http_tool_executor_rejects_running_event_loop(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("app.chat.mcp.client_executor.asyncio.get_running_loop", lambda: object())
+    monkeypatch.setattr("app.chat.interfaces.mcp.client_executor.asyncio.get_running_loop", lambda: object())
     executor = MCPHTTPToolExecutor(url="http://mcp.test/mcp", async_caller=fake_async_caller)
 
     with pytest.raises(RuntimeError, match="cannot be used inside an already running event loop"):

@@ -7,8 +7,8 @@ Docker/FastAPI API를 운영 가능한 형태로 만들기 위해 request 단위
 ## 구현
 
 ```text
-app/chat/api/logging.py
-app/chat/api/errors.py
+app/chat/interfaces/api/logging.py
+app/chat/interfaces/api/errors.py
 tests/chat/api/test_api.py
 ```
 
@@ -26,7 +26,7 @@ tests/chat/api/test_api.py
 {
   "timestamp": "2026-07-22 08:01:55,283",
   "level": "INFO",
-  "logger": "app.chat.api",
+  "logger": "app.chat.interfaces.api",
   "message": "request_completed",
   "request_id": "docker-json-validation-1",
   "method": "POST",

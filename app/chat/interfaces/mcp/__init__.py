@@ -1,4 +1,4 @@
-from app.chat.mcp.server_adapter import (
+from app.chat.interfaces.mcp.server_adapter import (
     MCPCallToolResponse,
     MCPContent,
     MCPListToolsResponse,
@@ -14,6 +14,6 @@ __all__ = [
     "list_tools",
 ]
 
-from app.chat.mcp.client_executor import MCPHTTPToolExecutor
+from app.chat.interfaces.mcp.client_executor import MCPHTTPToolExecutor
 
 __all__ = ["MCPHTTPToolExecutor"]

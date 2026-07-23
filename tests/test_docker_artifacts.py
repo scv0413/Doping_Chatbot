@@ -6,7 +6,7 @@ def test_dockerfile_runs_fastapi_api() -> None:
 
     assert "ghcr.io/astral-sh/uv:python3.12" in dockerfile
     assert "uv sync --frozen --no-dev" in dockerfile
-    assert "app.chat.api.main:app" in dockerfile
+    assert "app.chat.interfaces.api.main:app" in dockerfile
     assert "--no-access-log" in dockerfile
     assert "0.0.0.0" in dockerfile
     assert "8000" in dockerfile
@@ -40,8 +40,8 @@ def test_compose_mounts_runtime_data_and_exposes_api_port() -> None:
 
 
 def test_api_logging_module_is_configured() -> None:
-    logging_file = Path("app/chat/api/logging.py").read_text(encoding="utf-8")
-    main_file = Path("app/chat/api/main.py").read_text(encoding="utf-8")
+    logging_file = Path("app/chat/interfaces/api/logging.py").read_text(encoding="utf-8")
+    main_file = Path("app/chat/interfaces/api/main.py").read_text(encoding="utf-8")
 
     assert "request_completed" in logging_file
     assert "duration_ms" in logging_file

@@ -3,9 +3,9 @@ import logging
 
 from fastapi.testclient import TestClient
 
-from app.chat.api.dependencies import get_chat_service
-from app.chat.api.logging import REQUEST_ID_HEADER, JsonLogFormatter
-from app.chat.api.main import create_app
+from app.chat.interfaces.api.dependencies import get_chat_service
+from app.chat.interfaces.api.logging import REQUEST_ID_HEADER, JsonLogFormatter
+from app.chat.interfaces.api.main import create_app
 from app.chat.runtime import ChatEngine, ChatRequest, ChatResponse
 
 
@@ -228,7 +228,7 @@ def test_unhandled_error_includes_request_id_in_header_and_body() -> None:
 
 def test_json_log_formatter_outputs_structured_json() -> None:
     record = logging.LogRecord(
-        name="app.chat.api",
+        name="app.chat.interfaces.api",
         level=logging.INFO,
         pathname=__file__,
         lineno=1,

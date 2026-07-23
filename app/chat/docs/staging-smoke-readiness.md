@@ -41,7 +41,7 @@ Readiness는 서버 내부 의존성을 확인하고, staging smoke는 외부 HT
 API 서버 실행:
 
 ```bash
-uv run uvicorn app.chat.api.main:app --host 127.0.0.1 --port 8000
+uv run uvicorn app.chat.interfaces.api.main:app --host 127.0.0.1 --port 8000
 ```
 
 다른 터미널에서 smoke 실행:
@@ -65,5 +65,5 @@ STAGING_SMOKE_API_KEY="$ADMIN_API_KEY" uv run python scripts/staging_smoke.py \
 
 ## 검증
 
-- `uv run ruff check app/chat/api/readiness.py scripts/staging_smoke.py tests/chat/api/test_api.py tests/chat/api/test_readiness.py tests/chat/api/test_staging_smoke.py`: 통과
+- `uv run ruff check app/chat/interfaces/api/readiness.py scripts/staging_smoke.py tests/chat/api/test_api.py tests/chat/api/test_readiness.py tests/chat/api/test_staging_smoke.py`: 통과
 - `uv run pytest tests/chat/api/test_api.py tests/chat/api/test_readiness.py tests/chat/api/test_staging_smoke.py`: 20 passed

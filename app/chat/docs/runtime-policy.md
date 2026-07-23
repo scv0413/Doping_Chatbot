@@ -59,7 +59,7 @@ LangSmith 비교 결과에서 half-life/pharmacology 케이스는 `use_llm=False
   - 요청에 값이 없으면 Runtime Policy로 채움
   - 명시적 값이 있으면 실험과 테스트를 위해 override로 존중
 
-- `app/chat/ui/gradio_app.py`
+- `app/chat/interfaces/ui/gradio_app.py`
   - 사용자 화면에서 `검색 문서 수`, `LLM 답변 사용`, `실행 엔진` 옵션 제거
   - 내부적으로 `run_chat(ChatRequest(query=...))`만 호출
 

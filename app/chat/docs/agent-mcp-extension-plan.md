@@ -369,7 +369,7 @@ MCP Python SDK 의존성을 바로 추가하지 않고, 먼저 SDK-free adapter 
 
 구현 파일:
 
-- `app/chat/mcp/server_adapter.py`
+- `app/chat/interfaces/mcp/server_adapter.py`
 - `tests/chat/tools/test_mcp_server_adapter.py`
 
 제공 기능:
@@ -397,7 +397,7 @@ MCP Python SDK 의존성을 바로 추가하지 않고, 먼저 SDK-free adapter 
 
 구현 파일:
 
-- `app/chat/mcp/fastmcp_server.py`
+- `app/chat/interfaces/mcp/fastmcp_server.py`
 - `tests/chat/tools/test_fastmcp_server.py`
 
 구성:
@@ -413,7 +413,7 @@ MCP Python SDK 의존성을 바로 추가하지 않고, 먼저 SDK-free adapter 
 실행:
 
 ```bash
-uv run python -m app.chat.mcp.fastmcp_server
+uv run python -m app.chat.interfaces.mcp.fastmcp_server
 ```
 
 노출 tool:
@@ -431,7 +431,7 @@ uv run python -m app.chat.mcp.fastmcp_server
 실제 연결 검증:
 
 ```bash
-uv run python -m app.chat.mcp.fastmcp_server
+uv run python -m app.chat.interfaces.mcp.fastmcp_server
 uv run python scripts/mcp_smoke.py --call-pharmacology
 ```
 
@@ -464,7 +464,7 @@ MCP server entrypoint를 실제 LangSmith eval target에 연결했다.
 실행:
 
 ```bash
-uv run python -m app.chat.mcp.fastmcp_server
+uv run python -m app.chat.interfaces.mcp.fastmcp_server
 uv run python -m app.chat.evals.langsmith_mcp_eval --top-k 3 --skip-dataset-upload
 ```
 
@@ -523,14 +523,14 @@ Graph 기본 실행은 내부 registry executor를 유지하되, 실제 MCP stre
 
 구현 파일:
 
-- `app/chat/mcp/client_executor.py`
+- `app/chat/interfaces/mcp/client_executor.py`
 - `tests/chat/tools/test_mcp_client_executor.py`
 
 사용 예:
 
 ```python
 from app.chat.orchestration.graph.graph import run_chat_graph
-from app.chat.mcp.client_executor import MCPHTTPToolExecutor
+from app.chat.interfaces.mcp.client_executor import MCPHTTPToolExecutor
 
 result = run_chat_graph(
     "S0 비승인약물이 뭐야?",
@@ -543,7 +543,7 @@ result = run_chat_graph(
 실행 전제:
 
 ```bash
-uv run python -m app.chat.mcp.fastmcp_server
+uv run python -m app.chat.interfaces.mcp.fastmcp_server
 ```
 
 검증 결과:
@@ -574,7 +574,7 @@ uv run python -m app.chat.mcp.fastmcp_server
 
 ```python
 from app.chat.orchestration.graph.graph import run_chat_graph
-from app.chat.mcp.client_executor import MCPHTTPToolExecutor
+from app.chat.interfaces.mcp.client_executor import MCPHTTPToolExecutor
 
 result = run_chat_graph(
     "S0 비승인약물이 뭐야?",

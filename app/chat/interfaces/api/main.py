@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 
-from app.chat.api.errors import register_exception_handlers
-from app.chat.api.logging import configure_logging, request_logging_middleware
-from app.chat.api.routes import router
+from app.chat.interfaces.api.errors import register_exception_handlers
+from app.chat.interfaces.api.logging import configure_logging, request_logging_middleware
+from app.chat.interfaces.api.routes import router
 from app.core.config import settings
 
 

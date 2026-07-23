@@ -54,10 +54,10 @@ app/chat/graph/
 app/chat/runtime.py
   UI/API 공통 entrypoint
 
-app/chat/api/
+app/chat/interfaces/api/
   FastAPI REST API, error handling, readiness, logging
 
-app/chat/ui/
+app/chat/interfaces/ui/
   Gradio MVP
 ```
 

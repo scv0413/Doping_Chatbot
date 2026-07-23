@@ -11,7 +11,7 @@ from fastapi import Depends, Header, HTTPException, Request, status
 
 from app.core.config import settings
 
-logger = logging.getLogger("app.chat.api.security")
+logger = logging.getLogger("app.chat.interfaces.api.security")
 
 
 class UserRole(StrEnum):
