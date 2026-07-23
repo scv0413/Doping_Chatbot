@@ -622,7 +622,26 @@ def inspect_pdf_page_loading(
                 )
                 continue
 
-            if is_low_quality_text(page_text):
+            extraction_result = None
+            if should_use_korean_ocr_fallback(metadata, page_number):
+                extraction_result = resolve_page_text(
+                    page,
+                    text_layer_text=page_text,
+                    expects_korean=True,
+                )
+                if extraction_result.text is None:
+                    results.append(
+                        {
+                            "page": page_number,
+                            "status": "skipped",
+                            "reason": extraction_result.quality_report.reason or "ocr_needs_review",
+                            "char_count": extraction_result.quality_report.char_count,
+                            **provenance_update(extraction_result),
+                        }
+                    )
+                    continue
+                page_text = extraction_result.text
+            elif is_low_quality_text(page_text):
                 results.append(
                     {
                         "page": page_number,
@@ -639,6 +658,7 @@ def inspect_pdf_page_loading(
                     "status": "loaded",
                     "reason": "ok",
                     "char_count": len(page_text),
+                    **provenance_update(extraction_result),
                 }
             )
 
