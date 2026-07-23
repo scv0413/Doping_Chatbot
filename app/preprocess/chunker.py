@@ -5,7 +5,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from app.chat.config import settings
+from app.core.config import settings
 
 
 DEFAULT_CHUNK_SIZE = 900

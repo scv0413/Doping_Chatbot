@@ -4,7 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from app.chat.config import settings
+from app.core.config import settings
 
 MANUAL_SOURCE_ID = "field_response_manual"
 MANUAL_TITLE = "현장 대응 매뉴얼"

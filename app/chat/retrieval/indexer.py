@@ -4,7 +4,7 @@ from typing import Any
 
 from langchain_core.documents import Document
 
-from app.chat.config import settings
+from app.core.config import settings
 from app.chat.retrieval.vector_store import (
     count_vector_store_documents,
     get_chroma_persist_directory,

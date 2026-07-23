@@ -3,7 +3,7 @@ from langchain_openai import ChatOpenAI
 
 from app.chat.answer.formatter import format_answer
 from app.chat.answer.types import AnswerLLM, ChatMessage
-from app.chat.config import settings
+from app.core.config import settings
 from app.chat.policy.answer_policy import (
     OFFICIAL_DECISION_DISCLAIMER,
     build_answer_writing_instructions,

@@ -9,7 +9,7 @@ from secrets import compare_digest
 
 from fastapi import Depends, Header, HTTPException, Request, status
 
-from app.chat.config import settings
+from app.core.config import settings
 
 logger = logging.getLogger("app.chat.api.security")
 

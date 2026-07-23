@@ -5,7 +5,7 @@ from typing import Any
 
 from langsmith import Client, evaluate, traceable
 
-from app.chat.config import settings
+from app.core.config import settings
 from app.chat.evals.langsmith_answer_eval import count_concept_hits
 from app.chat.evals.half_life_cases import (
     HALF_LIFE_EVAL_CASES,

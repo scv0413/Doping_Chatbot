@@ -3,7 +3,7 @@ from pathlib import Path
 import chromadb
 
 from app.chat.api.readiness import build_readiness_response
-from app.chat.config import settings
+from app.core.config import settings
 from app.chat.retrieval.indexer import DEFAULT_CHUNK_FILE_NAMES
 
 

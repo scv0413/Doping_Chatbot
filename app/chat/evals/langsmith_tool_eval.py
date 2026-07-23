@@ -4,7 +4,7 @@ from typing import Any
 
 from langsmith import Client, evaluate, traceable
 
-from app.chat.config import settings
+from app.core.config import settings
 from app.chat.evals.langsmith_retrieval_eval import (
     DATASET_NAME as RETRIEVAL_DATASET_NAME,
     context_budget_evaluator,

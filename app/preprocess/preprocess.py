@@ -3,7 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from app.chat.config import settings
+from app.core.config import settings
 from app.preprocess.manifest import load_source_manifest
 from app.preprocess.pdf_loader import (
     inspect_pdf_page_loading,

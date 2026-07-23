@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from app.chat.api.errors import register_exception_handlers
 from app.chat.api.logging import configure_logging, request_logging_middleware
 from app.chat.api.routes import router
-from app.chat.config import settings
+from app.core.config import settings
 
 
 def create_app() -> FastAPI:

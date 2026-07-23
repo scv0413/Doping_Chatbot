@@ -3,7 +3,7 @@ import json
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
 
-from app.chat.config import settings
+from app.core.config import settings
 
 ChromaMetadata = dict[str, str | int | float | bool]
 

@@ -5,7 +5,7 @@ from typing import Any
 
 from langsmith import Client, evaluate, traceable
 
-from app.chat.config import settings
+from app.core.config import settings
 from app.chat.evals.field_scenario_cases import (
     FIELD_SCENARIO_EVAL_CASES,
     FieldScenarioEvalCase,

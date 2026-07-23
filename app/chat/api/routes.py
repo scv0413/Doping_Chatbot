@@ -10,7 +10,7 @@ from app.chat.api.security import (
     log_chat_access,
     require_roles,
 )
-from app.chat.config import settings
+from app.core.config import settings
 from app.chat.runtime import ChatRequest, ChatResponse, CitationSummary
 
 router = APIRouter()

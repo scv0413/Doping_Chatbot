@@ -3,7 +3,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from app.chat.config import settings
+from app.core.config import settings
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:

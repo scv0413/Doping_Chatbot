@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 
 from app.chat.api.dependencies import get_chat_service
 from app.chat.api.main import create_app
-from app.chat.config import settings
+from app.core.config import settings
 from app.chat.runtime import ChatEngine, ChatRequest, ChatResponse
 
 

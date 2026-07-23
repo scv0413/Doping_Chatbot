@@ -4,7 +4,7 @@ from typing import Callable
 import chromadb
 from pydantic import BaseModel, Field
 
-from app.chat.config import settings
+from app.core.config import settings
 from app.chat.retrieval.indexer import DEFAULT_CHUNK_FILE_NAMES
 from app.chat.retrieval.vector_store import get_chroma_persist_directory
 

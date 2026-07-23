@@ -9,7 +9,7 @@ from langsmith import Client, evaluate, traceable
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
-from app.chat.config import settings
+from app.core.config import settings
 from app.chat.evals.langsmith_retrieval_eval import (
     DATASET_NAME as RETRIEVAL_DATASET_NAME,
     context_budget_evaluator,

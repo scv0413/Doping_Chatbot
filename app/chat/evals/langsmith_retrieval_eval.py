@@ -5,7 +5,7 @@ from typing import Any
 
 from langsmith import Client, evaluate, traceable
 
-from app.chat.config import settings
+from app.core.config import settings
 from app.chat.evals.cases import DEFAULT_CASES, EvalCase, case_to_inputs, case_to_outputs
 from app.chat.evals.retrieval_token_experiment import (
     ExperimentConfig,
