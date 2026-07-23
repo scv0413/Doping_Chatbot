@@ -167,19 +167,19 @@ def parse_approved_manual_document(markdown_text: str) -> tuple[ApprovedManualFr
     return front_matter, body.strip()
 
 
-def split_approved_manual_sections(markdown_text: str) -> list[tuple[str, str, int, int]]:
+def split_approved_manual_sections(markdown_text: str) -> list[tuple[str, str, int, int | None]]:
     matches = list(APPROVED_MANUAL_SECTION_PATTERN.finditer(markdown_text))
     if not matches:
         raise ValueError("Approved manual requires at least one numbered ## section.")
 
-    sections: list[tuple[str, str, int, int]] = []
+    sections: list[tuple[str, str, int, int | None]] = []
     for index, match in enumerate(matches):
         section_number = match.group(1)
         start = match.end()
         end = matches[index + 1].start() if index + 1 < len(matches) else len(markdown_text)
         section_text = markdown_text[start:end].strip()
         english_page = _extract_required_page(ENGLISH_SOURCE_PAGE_PATTERN, section_text, "english-source-page")
-        korean_ocr_page = _extract_required_page(KOREAN_OCR_PAGE_PATTERN, section_text, "korean-ocr-page")
+        korean_ocr_page = _extract_optional_page(KOREAN_OCR_PAGE_PATTERN, section_text)
         cleaned_text = ENGLISH_SOURCE_PAGE_PATTERN.sub("", section_text)
         cleaned_text = KOREAN_OCR_PAGE_PATTERN.sub("", cleaned_text).strip()
 
@@ -196,6 +196,11 @@ def _extract_required_page(pattern: re.Pattern[str], text: str, marker_name: str
     if match is None:
         raise ValueError(f"Approved manual section requires <!-- {marker_name}: PAGE -->.")
     return int(match.group(1))
+
+
+def _extract_optional_page(pattern: re.Pattern[str], text: str) -> int | None:
+    match = pattern.search(text)
+    return int(match.group(1)) if match else None
 
 
 def build_approved_manual_chunks(
