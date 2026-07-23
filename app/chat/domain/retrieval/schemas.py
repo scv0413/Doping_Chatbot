@@ -9,6 +9,7 @@ class RetrievalMetadata(BaseModel):
     authority: str | None = None
     source_type: str | None = None
     chunk_id: str | None = None
+    source_language: str | None = None
 
 
 class RetrievalMatch(BaseModel):

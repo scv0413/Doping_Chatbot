@@ -27,6 +27,7 @@ class RagSearchResult(BaseModel):
     section: str | None = None
     authority: str | None = None
     source_type: str | None = None
+    source_language: str | None = None
 
 
 class RagSearchToolOutput(BaseModel):

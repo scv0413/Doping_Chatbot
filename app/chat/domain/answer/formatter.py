@@ -65,6 +65,8 @@ def format_answer(
             retrieval_matches=retrieval_matches,
         ),
         "",
+        *format_source_language_notice(retrieval_matches),
+        "",
         "## 근거 핵심",
         *format_evidence_highlights(retrieval_matches=retrieval_matches, limit=citation_limit),
         "",
@@ -294,6 +296,12 @@ def format_action_guidance(
         return ["- 검색된 근거를 기준으로 답변하되, 불명확한 부분은 공식 기관 확인을 우선합니다."]
 
     return ["- 검색 근거가 부족하므로 공식 자료 확인 후 판단해야 합니다."]
+
+
+def format_source_language_notice(retrieval_matches: list[RetrievalMatch]) -> list[str]:
+    if any(match.metadata.source_language == "en" for match in retrieval_matches):
+        return ["- 아래 설명은 WADA 영문 원문을 기준으로 한국어로 안내한 내용이며, 공식 한국어 번역문이 아닙니다."]
+    return []
 
 
 def format_evidence_highlights(retrieval_matches: list[RetrievalMatch], limit: int) -> list[str]:

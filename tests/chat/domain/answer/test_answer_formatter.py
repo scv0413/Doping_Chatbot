@@ -95,3 +95,17 @@ def test_format_answer_handles_rag_only() -> None:
     assert "공식 판정을 대체하지 않습니다" in answer
     assert "확인, 기록, 동석 요청" in answer
     assert "경기기간 중 약물 사용" not in answer
+
+
+def test_formatter_marks_english_source_as_korean_explanation() -> None:
+    answer = format_answer(
+        query="통지 절차를 설명해줘",
+        decision=RouteDecision(route=ChatRoute.RAG, reason="rag"),
+        retrieval_matches=[
+            RetrievalMatch(rank=1, chunk_id="wada_isti_2021_ko_en:p83:c0", distance=0.1,
+                metadata=RetrievalMetadata(source_id="wada_isti_2021_ko_en", title="ISTI", page=83, source_language="en"),
+                text="The DCO shall establish the location of the selected Athlete.")
+        ],
+    )
+    assert "WADA 영문 원문을 기준으로 한국어로 안내" in answer
+    assert "ISTI, p.83" in answer

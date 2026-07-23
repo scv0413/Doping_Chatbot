@@ -171,3 +171,7 @@ def test_generate_answer_passes_trimmed_messages_to_injected_llm() -> None:
     assert captured_messages[0]["role"] == "system"
     assert captured_messages[-1]["role"] == "user"
     assert "TUE 신청 방법 알려줘" in captured_messages[-1]["content"]
+
+def test_build_answer_messages_marks_english_source_as_korean_explanation() -> None:
+    messages = build_answer_messages(query="영문 규정 설명", decision=RouteDecision(route=ChatRoute.RAG, reason="rag"), structured_answer="원문 언어: en\nWADA ISTI p.83")
+    assert "공식 한국어 번역문처럼 표현하지 않고" in messages[0]["content"]
