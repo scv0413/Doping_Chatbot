@@ -47,3 +47,14 @@ an official English original; it is not represented as an official Korean transl
    translation.
 4. Update or supersede a reviewed Korean manual only after the changed clause
    scope has been checked.
+
+## Automated Comparison Result
+
+The project compared the English text that underlies the reviewed Korean guide
+(Articles 5.3.5 through 5.4.1) against the 2023 source. Article 5.3.5 matched
+exactly. Article 5.3.6 adds `as applicable` in 2023. Article 5.3.7 has
+formatting and punctuation differences, and Article 5.4.1 continues onto 2023
+p.43. Therefore the existing Korean reviewed guide continues to cite the 2021
+original p.83 until a human confirms whether its Korean wording remains
+appropriate for the 2023 clause scope. This does not block indexing the 2023
+English original itself.
