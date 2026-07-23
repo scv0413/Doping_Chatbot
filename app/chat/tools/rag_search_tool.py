@@ -49,6 +49,8 @@ def match_to_tool_result(match: RetrievalMatch) -> RagSearchResult:
         authority=metadata.authority,
         source_type=metadata.source_type,
         source_language=metadata.source_language,
+        official_source_id=metadata.official_source_id,
+        official_source_page=metadata.official_source_page,
     )
 
 
@@ -69,6 +71,8 @@ def tool_result_to_retrieval_match(result: RagSearchResult) -> RetrievalMatch:
             authority=result.authority,
             source_type=result.source_type,
             source_language=result.source_language,
+            official_source_id=result.official_source_id,
+            official_source_page=result.official_source_page,
             chunk_id=result.chunk_id,
         ),
         text=result.text,

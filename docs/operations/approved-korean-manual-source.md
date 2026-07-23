@@ -47,3 +47,10 @@ The reviewer is responsible for making the Korean wording faithful to the
 official English page. The resulting manual is a reviewed explanatory source,
 not an official WADA Korean publication; chatbot answers should preserve the
 official English citation.
+
+## Answer Citation Rule
+
+When a reviewed Korean manual chunk is retrieved, the answer shows both the
+manual citation and its linked official English citation in the form
+`원문: source_id, p.PAGE`. This keeps the Korean explanation useful while making
+the official source page traceable to the user.

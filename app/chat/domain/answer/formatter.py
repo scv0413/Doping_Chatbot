@@ -359,6 +359,7 @@ def format_citations(
     limit: int,
 ) -> list[str]:
     citations: list[str] = []
+    official_citation_keys: set[tuple[str, int | None]] = set()
 
     if pharmacology_result:
         citations.extend(format_pharmacology_sources(pharmacology_result))
@@ -374,6 +375,14 @@ def format_citations(
         page_text = f", p.{page}" if page is not None else ""
         preview = normalize_preview_text(match.text, max_chars=180)
         citations.append(f"- {match.title}{page_text} (`{match.chunk_id}`): {preview}")
+
+        official_source_id = match.metadata.official_source_id
+        official_source_page = match.metadata.official_source_page
+        official_citation_key = (official_source_id, official_source_page)
+        if official_source_id and official_citation_key not in official_citation_keys:
+            official_citation_keys.add(official_citation_key)
+            official_page_text = f", p.{official_source_page}" if official_source_page is not None else ""
+            citations.append(f"  - 원문: `{official_source_id}`{official_page_text}")
 
     return citations
 

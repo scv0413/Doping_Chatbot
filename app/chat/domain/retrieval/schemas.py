@@ -10,6 +10,8 @@ class RetrievalMetadata(BaseModel):
     source_type: str | None = None
     chunk_id: str | None = None
     source_language: str | None = None
+    official_source_id: str | None = None
+    official_source_page: int | None = None
 
 
 class RetrievalMatch(BaseModel):

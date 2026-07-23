@@ -78,3 +78,29 @@ def test_rag_search_request_rejects_invalid_top_k() -> None:
 
     with pytest.raises(ValidationError):
         RagSearchRequest(query="S0", top_k=11)
+
+
+def test_rag_search_tool_preserves_official_source_citation() -> None:
+    def reviewed_manual_retriever(query: str, top_k: int) -> list[RetrievalMatch]:
+        return [
+            RetrievalMatch(
+                rank=1,
+                chunk_id="wada_isti_ko_human_reviewed:5.3.5:c0",
+                distance=0.1,
+                metadata=RetrievalMetadata(
+                    source_id="wada_isti_ko_human_reviewed",
+                    title="ISTI Korean Human-Reviewed Guide",
+                    official_source_id="wada_isti_2021_ko_en",
+                    official_source_page=83,
+                ),
+                text="검수된 한국어 안내문입니다.",
+            )
+        ]
+
+    output = run_rag_search_tool(
+        RagSearchRequest(query="ISTI 통지 절차"),
+        retriever=reviewed_manual_retriever,
+    )
+
+    assert output.results[0].official_source_id == "wada_isti_2021_ko_en"
+    assert output.results[0].official_source_page == 83

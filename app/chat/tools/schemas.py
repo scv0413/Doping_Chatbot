@@ -28,6 +28,8 @@ class RagSearchResult(BaseModel):
     authority: str | None = None
     source_type: str | None = None
     source_language: str | None = None
+    official_source_id: str | None = None
+    official_source_page: int | None = None
 
 
 class RagSearchToolOutput(BaseModel):
