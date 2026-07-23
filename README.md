@@ -1,281 +1,195 @@
 # Doping Chatbot
 
-KADA/WADA 도핑 관련 규정, 금지약물, 현장 대응 시나리오, 반감기/약리 정보를 근거 기반으로 검색하고 답변하는 RAG 챗봇 프로젝트입니다.
+KADA/WADA 도핑 규정, 금지약물, 현장 대응, 반감기 정보를 근거 기반으로 안내하는 선수·트레이너용 RAG 챗봇입니다.
 
-목표 사용자는 엘리트 선수와 트레이너입니다. 도핑 교육 내용을 기억하는 것에만 의존하지 않고, 실제 경기장/응급상황/약물 복용 전 확인 상황에서 빠르게 참고할 수 있는 보조 도구를 목표로 설계했습니다.
+이 프로젝트는 사용자를 도핑 규정 전문가로 만들기보다, 경기장과 의료 상황처럼 시간이 부족한 순간에 **위험한 행동을 피하고 공식 근거를 확인하도록 돕는 보조 도구**를 목표로 합니다.
 
-> 이 프로젝트는 공식 판정 도구가 아닙니다. 약물 사용 가능 여부, TUE, 시료채취 절차, 검사 거부/지연 판단은 반드시 KADA/WADA 공식 자료와 담당 전문가 확인이 필요합니다.
+> 공식 판정 도구가 아닙니다. 약물 사용, TUE, 시료채취 거부·지연 판단은 KADA/WADA 공식 자료와 담당 전문가 확인이 필요합니다.
 
-## 주요 기능
+## Portfolio Snapshot
 
-- PDF/manual 기반 RAG 검색
-- KADA 약물검색 성격의 drug search 계층
-- 슈도에페드린 등 일부 성분의 반감기/약리 참고 정보 계층
-- 질문 intent router
-- deterministic formatter와 LangChain OpenAI 기반 answer chain
-- LangGraph 기반 실행 흐름
-- LangSmith retrieval/tool/answer/field/half-life eval
-- Gradio MVP UI
-- FastAPI REST API
-- `/health`, `/ready`, request_id, JSON structured logging
-- Docker non-root runtime, Docker build CI 검증
+- **Implementation baseline:** `4f45bf8` 이후 검증된 기능을 기준으로 동결
+- **Regression tests:** `228 passed`
+- **Local release gate:** 15 cases, `route_match`, `source_hit`, `term_hit`, `retrieval_quality`, `tool_contract` 모두 `1.0`
+- **LangSmith:** retrieval 및 deterministic answer evaluation 완료
+- **Safety:** retrieved context 기반 답변, 명시적 출처, 정보 부족 시 보류, 단정 방지, 대상자 톤, 안전 고지의 6-rule policy 적용
+
+## Problem
+
+도핑 교육에서는 홈페이지 검색을 안내하지만, 실제 현장에는 시간·언어·긴장이 동시에 작용합니다.
+
+- 해외 경기 중 검사 통지와 응급 치료가 충돌하는 상황
+- 새벽 혈액 시료 채취 요청에서 검사관 신분과 절차를 빠르게 확인해야 하는 상황
+- 감기약, 비강 스프레이, 진통제의 제품명·성분명·투여경로를 확인해야 하는 상황
+- 반감기 정보를 경기기간 복용 가능 여부로 잘못 해석할 위험
 
 ## Architecture
 
 ```text
-app/
-  core/
-    config.py             # 공통 설정과 data 경로
-  preprocess/
-    sources/              # source schema, manifest, inventory
-    pdf/                  # PDF loader와 inspector
-    transform/            # page JSONL, chunk, 결과 inspector
-    ocr/                  # OCR 품질 검사와 fallback
-  chat/
-    domain/               # retrieval, drug search, pharmacology, answer, policy
-    orchestration/        # router, pipeline, graph, agent
-    tools/                # rag/drug/pharmacology tool request/output contract
-    interfaces/           # FastAPI, Gradio, FastMCP external adapters
-    runtime.py            # Gradio/FastAPI 공통 entrypoint
-    evals/                # LangSmith/retrieval/answer/half-life/field eval
-scripts/
-  staging_smoke.py        # HTTP 기준 staging smoke 검증
-tests/
-  preprocess/             # 전처리 구조와 source inventory 검증
-  chat/                   # domain, orchestration, interfaces, tools, evals 검증
-data/
-  raw/ processed/ indexes/ operations/  # runtime data, git 제외
-docs/
-  architecture/ operations/ evaluation/ superpowers/
-logs/                     # 작업 과정 기록, git 제외
-local_archive/            # presentations, learning 보관, git 제외
+PDF / manual / official source
+  -> inspection -> preprocessing -> chunks + provenance metadata
+  -> OpenAI embeddings + Chroma retrieval
+  -> query rewrite + explicit-section rerank
+  -> router
+       -> rag_search_tool
+       -> drug_search_tool
+       -> pharmacology_info_tool
+  -> LangGraph controlled tool plan (bounded retry)
+  -> policy + deterministic formatter + optional LLM answer chain
+  -> Gradio / FastAPI / FastMCP
+  -> pytest + release gate + LangSmith evaluation
 ```
 
-## Environment
+### Why separate the domains?
 
-Python 3.12와 `uv`를 사용합니다.
+| Layer | Responsibility | Why it is separate |
+|---|---|---|
+| `retrieval` | Regulations, procedures, field guidance | Requires document provenance and citation quality |
+| `drug_search` | Product/ingredient lookup | Product names and ingredient names do not behave like regulatory documents |
+| `pharmacology` | Half-life and pharmacology reference | Must never be treated as a competition eligibility decision |
+| `answer` / `policy` | Safe rendering and LLM constraints | Keeps safety rules testable apart from retrieval |
+| `orchestration` | Router, pipeline, LangGraph, bounded agent plan | Separates intent, tool execution, retry, and exit rules |
+
+### Controlled agent and MCP
+
+The project does not use an unrestricted LLM agent. The router and runtime policy create a bounded tool plan:
+
+```text
+field/regulation -> rag_search_tool
+product/ingredient -> drug_search_tool
+drug + regulation -> drug_search_tool -> rag_search_tool
+half-life substance -> drug_search_tool -> pharmacology_info_tool -> rag_search_tool
+```
+
+LangGraph allows only one retrieval retry, uses message trimming, and has an explicit exit node. MCP-compatible Pydantic tool contracts are exposed through FastMCP for `rag_search_tool`, `drug_search_tool`, and `pharmacology_info_tool`. The internal registry executor remains the default; the HTTP MCP executor is optional and falls back internally on transport failure.
+
+## Source Quality and Provenance
+
+- PDF layout is inspected before indexing: reading order, columns, table of contents, footer, and character quality are recorded.
+- Broken OCR or low-quality pages are excluded rather than silently indexed.
+- WADA ISTI 2023 English is the active ISTI source.
+- Korean guidance is indexed only after project review. It is clearly labeled as non-official Korean guidance and cites the official English source page.
+- Current reviewed ISTI Korean scope: Articles `5.3.5` through `5.4.5`, including notification, interpreter/third party, identity, signature, delay, and continuous observation.
+
+A useful recent regression illustrates the approach: the query about delaying a Doping Control Station visit initially retrieved only broad field guidance. The relevant ISTI `5.4.4` chunk was 13th in vector similarity. When the query explicitly contained `Article 5.4.4`, the retriever now expands the candidate pool and prioritizes the matching document `section` only for that explicit reference. The release gate then returned all quality metrics at `1.0`.
+
+## Repository Layout
+
+```text
+app/
+  core/                     # settings, data paths
+  preprocess/               # sources, PDF extraction, transform, OCR, manual loading
+  chat/
+    domain/                 # retrieval, drug_search, pharmacology, answer, policy
+    orchestration/          # router, pipeline, LangGraph, controlled agent plan
+    tools/                  # Pydantic/MCP-compatible tool contracts and registry
+    interfaces/             # FastAPI, Gradio, FastMCP adapters
+    evals/                  # LangSmith and local quality gates
+    runtime.py              # shared public entrypoint
+scripts/                    # refresh, smoke, release quality CLI
+tests/                      # structure-mirrored regression tests
+data/                       # raw, processed, Chroma indexes, operations (git ignored)
+docs/                       # architecture, operations, evaluation decisions
+local_archive/              # personal presentation and rehearsal materials (git ignored)
+```
+
+## Run Locally
+
+### Environment
+
+Python 3.12 and `uv` are used.
 
 ```bash
 uv sync --extra dev
 ```
 
-`.env.example`을 기준으로 `.env`를 작성합니다.
-
-필수:
+Create `.env` from `.env.example`.
 
 ```env
 OPENAI_API_KEY=...
-```
-
-선택:
-
-```env
 LANGSMITH_TRACING=true
 LANGSMITH_API_KEY=...
 LANGSMITH_PROJECT=doping-chatbot
-```
-
-기본 모델:
-
-```env
 LLM_MODEL=gpt-4o-mini
 EMBEDDING_MODEL=text-embedding-3-small
-CHROMA_COLLECTION_NAME=doping_chunks_openai_small
 ```
 
-## Data Pipeline
-
-전처리:
+### Data and index
 
 ```bash
 uv run python -m app.preprocess.transform.preprocess
 uv run python -m app.preprocess.transform.chunker
-```
-
-색인:
-
-```bash
 uv run python -m app.chat.domain.retrieval.indexer
 ```
 
-Source 변경 audit 및 안전한 전체 재색인:
+### API and UI
 
 ```bash
-uv run python scripts/data_refresh.py
-# 검토 완료 후에만:
-uv run python scripts/data_refresh.py --apply
-```
-
-검색 확인:
-
-```bash
-uv run python -m app.chat.domain.retrieval.retriever "슈도에페드린 경기기간" --top-k 3
-uv run python -m app.chat.domain.retrieval.retrieval_inspector
-```
-
-## Run Locally
-
-API:
-
-```bash
+# FastAPI
 uv run uvicorn app.chat.interfaces.api.main:app --host 127.0.0.1 --port 8000
-```
 
-Gradio:
-
-```bash
+# Gradio
 uv run python -m app.chat.interfaces.ui.gradio_app --server-name 127.0.0.1 --server-port 7860
 ```
 
-Runtime inspector:
-
-```bash
-uv run python -m app.chat.runtime_inspector "도핑 검사관 신분이 불분명하면 어떻게 확인해야 해?" --no-llm --engine graph --top-k 3
-```
-
-## API
-
-Public endpoint는 사용자 입력을 단순하게 유지하기 위해 `query`만 받습니다.
-
-```bash
-curl -X POST http://127.0.0.1:8000/api/v1/chat-responses \
-  -H 'Content-Type: application/json' \
-  -d '{"query":"새벽에 혈액 시료 채취를 요청받으면 어떻게 대응해야 해?"}'
-```
-
-개발/평가용 옵션 override는 debug endpoint에서만 허용합니다.
-
-```bash
-curl -X POST http://127.0.0.1:8000/api/v1/debug/chat-responses \
-  -H 'Content-Type: application/json' \
-  -d '{"query":"S0 비승인약물이 뭐야?","top_k":3,"use_llm":false,"engine":"graph"}'
-```
-
-## MCP Server
-
-FastMCP 기반 MCP server entrypoint를 제공합니다. 기본 transport는 streamable HTTP이며 MCP endpoint는 `/mcp`입니다. FastAPI 기본 포트와 충돌하지 않도록 로컬 기본 포트는 `8012`를 사용합니다.
+### MCP server
 
 ```bash
 uv run python -m app.chat.interfaces.mcp.fastmcp_server
+# streamable HTTP endpoint: http://127.0.0.1:8012/mcp
 ```
 
-MCP Inspector 또는 MCP client에서 다음 URL로 연결합니다.
+## Demo Queries
 
 ```text
-http://127.0.0.1:8012/mcp
+도핑 검사관 신분이 불분명하면 어떻게 확인해야 해?
+도핑검사 통지서 서명을 거부하면 어떻게 돼?
+치료나 통역 때문에 도핑관리소 도착을 미뤄도 돼? 혼자 움직여도 돼?
+슈도에페드린 경기기간 중 먹어도 돼?
+약물 반감기로 경기기간 복용 가능 여부를 판단해도 돼?
 ```
-
-노출 tool:
-
-- `rag_search_tool`
-- `drug_search_tool`
-- `pharmacology_info_tool`
-
-별도 터미널에서 client smoke 검증:
-
-```bash
-uv run python scripts/mcp_smoke.py --call-pharmacology
-```
-
-검증 기준:
-
-- `missing_tools`가 빈 배열이어야 한다.
-- `ok`가 `true`여야 한다.
-- `pharmacology_call.structured_content.tool_name`이 `pharmacology_info_tool`이어야 한다.
-
-LangSmith MCP tool eval 실행:
-
-```bash
-uv run python -m app.chat.evals.langsmith_mcp_eval --top-k 3 --skip-dataset-upload
-```
-
-이 명령은 실행 중인 MCP endpoint를 통해 tool을 호출하고, LangSmith에 `mcp_connection`, `tool_contract`, retrieval 품질 지표를 함께 기록합니다.
-
-## Docker
-
-Build:
-
-```bash
-docker build -t doping-chatbot-api:local .
-```
-
-Run with local data/env:
-
-```bash
-docker compose up --build api
-```
-
-Container는 non-root user로 실행됩니다. `/ready`는 data/index/API key가 준비되어야 `ready`가 됩니다.
 
 ## Validation
 
-기본 검증:
-
 ```bash
+# regression and static checks
+uv run python -m pytest -q
 uv run ruff check app tests scripts
-uv run pytest
-```
 
-Staging smoke:
+# deterministic graph/tool release gate
+uv run python scripts/release_quality_gate.py
 
-```bash
+# LangSmith experiments
+uv run python -m app.chat.evals.langsmith_retrieval_eval --top-k 3
+uv run python -m app.chat.evals.langsmith_answer_eval --top-k 3
+
+# API staging smoke
 uv run python scripts/staging_smoke.py --base-url http://127.0.0.1:8000
 ```
 
-Release quality gate (data/index가 준비된 staging 또는 release 후보 환경):
+Latest verified baseline:
 
-```bash
-uv run python scripts/release_quality_gate.py
-```
-LangSmith retrieval/tool eval:
+- `228 passed`
+- release gate: 15 cases; all required metric averages `1.0`
+- [LangSmith retrieval experiment](https://smith.langchain.com/o/2d4720fb-5dfa-4666-983e-680c70b9ab87/datasets/aabceefb-4dbf-412c-9252-753697fdfb61/compare?selectedSessions=9eec1299-4641-4f67-88ca-227aee233144)
+- [LangSmith deterministic answer experiment](https://smith.langchain.com/o/2d4720fb-5dfa-4666-983e-680c70b9ab87/datasets/a7f204a4-bd4e-410c-90ac-61b2a4453de0/compare?selectedSessions=632f4b89-daff-465d-91e6-eba3fef27b0a)
 
-```bash
-uv run python -m app.chat.evals.langsmith_tool_eval --top-k 3
-```
+## API and Operations
 
-Docker artifact 검증:
-
-```bash
-uv run pytest tests/test_docker_artifacts.py
-```
-
-최근 로컬 검증 기준:
-
-- `uv run ruff check app tests scripts`: pass
-- `uv run pytest`: 193 passed (2026-07-23 리팩터링 검증 시점)
-- Docker build: pass
-- Docker container non-root: pass, user id `999`
-- Docker `/health`: pass
-- Docker `/ready`: JSON shape pass
-- LangSmith tool eval: `tool_contract`, `route_match`, `source_hit`, `term_hit`, `retrieval_quality` 평균 1.0
-
-## Design Decisions
-
-- UI/API는 내부 구현을 모르고 `run_chat(ChatRequest)`만 호출합니다.
-- public API와 Gradio는 `query`만 받습니다. `top_k`, `engine`, `use_llm`은 Runtime Policy가 결정합니다.
-- debug API, runtime inspector, LangSmith eval runner에서만 내부 옵션을 명시할 수 있습니다.
-- 최종 답변용 domain result와 LangSmith/tool trace용 tool output을 둘 다 graph state에 남깁니다.
-- `/health`는 process health, `/ready`는 data/index/runtime readiness를 확인합니다.
-- 기본 graph 실행은 내부 MCP-compatible registry executor를 사용합니다. 외부 MCP HTTP executor는 별도 server 연동과 transport 검증용 옵션이며, 장애 시 내부 executor로 fallback합니다.
-- CI Docker 검증은 secret/data가 없으므로 `/ready`의 JSON shape를 확인하고, 실제 staging smoke는 `ready`까지 요구합니다.
+- Public endpoint: `POST /api/v1/chat-responses` accepts only `query`.
+- Debug endpoint: `POST /api/v1/debug/chat-responses` allows `top_k`, `use_llm`, and engine overrides for evaluation.
+- `/health` checks process health; `/ready` checks runtime/data/index readiness.
+- Every API request receives an `X-Request-ID` and JSON structured logs.
+- Docker runs as a non-root user and supports readiness/staging smoke checks.
 
 ## Known Limitations
 
-- 일부 WADA ISTI 한국어 PDF는 텍스트 추출 품질 문제로 OCR/대체 데이터 보강이 필요합니다.
-- KADA 약물검색은 실제 운영 수준의 안정화, rate limit, 변경 감지 전략이 추가로 필요합니다.
-- 반감기/약리정보 reference는 MVP 범위의 일부 성분만 포함합니다.
-- 챗봇 답변은 법적/의학적 판단을 대체하지 않습니다.
-- 인증, 권한, rate limit은 향후 운영 단계에서 추가해야 합니다.
+- KADA drug search needs a production-level change-detection and rate-limit policy before public operation.
+- Pharmacology coverage is intentionally limited to a curated MVP set; half-life never determines eligibility on its own.
+- Only reviewed Korean guidance is indexable. More official sources and reviewed Korean sections are needed.
+- Authentication, role-based access, rate limits, audit retention, and CI/CD deployment automation are operating-stage work.
+- The chatbot is decision support, not legal, medical, or official anti-doping adjudication.
 
-## Roadmap
+## What This Project Demonstrates
 
-1. 제출/시연용 문서와 README 유지보수
-2. MCP tool wrapper로 `rag_search_tool`, `drug_search_tool`, `pharmacology_info_tool` 노출
-3. agentic graph에서 tool 선택/재시도 정책 고도화
-4. 사용자 권한, rate limit, audit logging 설계
-5. OCR/추가 공식 데이터 source 보강
-6. CI/CD 배포 자동화
-
-## Portfolio Notes
-
-발표용 HTML은 `local_archive/presentations/`, 개인 학습/리허설 자료는 `local_archive/learning/`에 보관하며 Git에 올리지 않습니다. 구현과 직접 관련된 설계·운영·평가 문서는 `docs/`에 남깁니다.
+This is not just a PDF chatbot. It demonstrates how to build a high-risk RAG service through source quality controls, separated domain tools, constrained agent execution, explicit citations, policy-driven answers, local regression gates, LangSmith evaluation, and operational interfaces.
