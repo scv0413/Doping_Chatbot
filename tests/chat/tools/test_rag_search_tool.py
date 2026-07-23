@@ -90,8 +90,8 @@ def test_rag_search_tool_preserves_official_source_citation() -> None:
                 metadata=RetrievalMetadata(
                     source_id="wada_isti_ko_human_reviewed",
                     title="ISTI Korean Human-Reviewed Guide",
-                    official_source_id="wada_isti_2021_ko_en",
-                    official_source_page=83,
+                    official_source_id="wada_isti_2023_en",
+                    official_source_page=42,
                 ),
                 text="검수된 한국어 안내문입니다.",
             )
@@ -102,5 +102,5 @@ def test_rag_search_tool_preserves_official_source_citation() -> None:
         retriever=reviewed_manual_retriever,
     )
 
-    assert output.results[0].official_source_id == "wada_isti_2021_ko_en"
-    assert output.results[0].official_source_page == 83
+    assert output.results[0].official_source_id == "wada_isti_2023_en"
+    assert output.results[0].official_source_page == 42

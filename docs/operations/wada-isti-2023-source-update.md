@@ -38,23 +38,10 @@ validation confirmed a PDF signature, SHA-256 identity, 88 pages, a readable
 English text layer, and table-of-contents pages 3-5. The source is indexed as
 an official English original; it is not represented as an official Korean translation.
 
-## Required Review Before Korean Guidance Changes
+## Korean Guidance Status
 
-1. Compare 2023 clauses that affect notification, blood collection, athlete
-   identification, and overnight testing with the current 2021 source.
-2. Record changed or removed clause references in a human-reviewed Korean manual.
-3. Do not claim that the project Korean guidance is an official WADA Korean
-   translation.
-4. Update or supersede a reviewed Korean manual only after the changed clause
-   scope has been checked.
-
-## Automated Comparison Result
-
-The project compared the English text that underlies the reviewed Korean guide
-(Articles 5.3.5 through 5.4.1) against the 2023 source. Article 5.3.5 matched
-exactly. Article 5.3.6 adds `as applicable` in 2023. Article 5.3.7 has
-formatting and punctuation differences, and Article 5.4.1 continues onto 2023
-p.43. Therefore the existing Korean reviewed guide continues to cite the 2021
-original p.83 until a human confirms whether its Korean wording remains
-appropriate for the 2023 clause scope. This does not block indexing the 2023
-English original itself.
+The 2021 bilingual source and its project-reviewed Korean guide were removed from
+the active corpus when the source policy changed to 2023-only. No Korean ISTI
+guide is currently indexed. Any future Korean guide must be newly reviewed
+against `wada_isti_2023_en` and cite the relevant 2023 English page; it must not
+be presented as an official WADA Korean translation.

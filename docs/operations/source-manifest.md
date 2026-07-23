@@ -14,7 +14,7 @@ PDF 파일명만으로 문서 의미를 추측하지 않고, 이 manifest를 기
 | kada_pro_sports_rules_2021_ko | data/raw/pdf/kada/kada_pro_sports_anti_doping_rules_2021_ko_amended_20220726.pdf | 프로스포츠 도핑방지규정 일부개정안 전문 | KADA | 2021 | ko | rules | 일반 PDF, 적용 범위 확인 필요 | 확인 필요 |
 | wada_prohibited_list_2026_ko | data/raw/pdf/wada/wada_prohibited_list_2026_ko.pdf | 금지목록 국제표준 | WADA | 2026 | ko | prohibited_list | 목록/표 구조 확인 필요 | 확인 필요 |
 | wada_code_consolidated_ko | data/raw/pdf/wada/wada_world_anti_doping_code_consolidated_ko.pdf | 세계도핑방지규약 통합본 | WADA | unknown | ko | code | 일반 PDF, 버전/시행일 확인 필요 | 확인 필요 |
-| wada_isti_2021_ko_en | data/raw/pdf/wada/wada_isti_2021_ko_en.pdf | 검사 및 조사 국제표준 | WADA | 2021 | mixed | testing_standard | 한/영 병렬 또는 번역 구조 확인 필요 | 확인 필요 |
+| wada_isti_2023_en | data/raw/pdf/wada/wada_isti_2023_en.pdf | WADA International Standard for Testing and Investigations 2023 | WADA | 2023 | en | testing_standard | Standard English text layer | ready |
 | wada_istue_2021_ko | data/raw/pdf/wada/wada_istue_2021_ko.pdf | 치료목적사용면책 국제표준 | WADA | 2021 | ko | tue_standard | 일반 PDF | 확인 필요 |
 | wada_isrm_2021_ko_en | data/raw/pdf/wada/wada_isrm_2021_ko_en.pdf | 결과관리 국제표준 | WADA | 2021 | mixed | results_management | 한/영 병렬 또는 번역 구조 확인 필요 | 확인 필요 |
 | wada_ise_2021_ko_en | data/raw/pdf/wada/wada_ise_2021_ko_en.pdf | 교육 국제표준 | WADA | 2021 | mixed | education_standard | 한/영 병렬 또는 번역 구조 확인 필요 | 확인 필요 |

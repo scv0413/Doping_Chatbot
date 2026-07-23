@@ -291,10 +291,10 @@ def test_public_api_serializes_official_source_for_reviewed_manual() -> None:
                     chunk_id="wada_isti_ko_human_reviewed:5.3.5:c0",
                     source_id="wada_isti_ko_human_reviewed",
                     title="ISTI Korean Human-Reviewed Guide",
-                    page=83,
+                    page=42,
                     distance=0.1,
-                    official_source_id="wada_isti_2021_ko_en",
-                    official_source_page=83,
+                    official_source_id="wada_isti_2023_en",
+                    official_source_page=42,
                 )
             ],
         )
@@ -306,5 +306,5 @@ def test_public_api_serializes_official_source_for_reviewed_manual() -> None:
 
     assert response.status_code == 200
     citation = response.json()["citations"][0]
-    assert citation["official_source_id"] == "wada_isti_2021_ko_en"
-    assert citation["official_source_page"] == 83
+    assert citation["official_source_id"] == "wada_isti_2023_en"
+    assert citation["official_source_page"] == 42

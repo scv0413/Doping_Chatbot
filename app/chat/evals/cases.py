@@ -45,21 +45,21 @@ DEFAULT_CASES = [
         case_id="field_dco_identity",
         query="도핑 검사관 신분이 불분명하면 어떻게 확인해야 해?",
         expected_route="rag",
-        expected_sources=("field_response_manual", "wada_isti_2021_ko_en"),
+        expected_sources=("field_response_manual", "wada_isti_2023_en"),
         must_include_terms=("신분", "검사관"),
     ),
     EvalCase(
         case_id="field_night_blood",
         query="새벽에 혈액 시료 채취를 요청받으면 어떻게 대응해야 해?",
         expected_route="rag",
-        expected_sources=("field_response_manual", "wada_isti_2021_ko_en"),
+        expected_sources=("field_response_manual", "wada_isti_2023_en"),
         must_include_terms=("혈액", "시료"),
     ),
     EvalCase(
         case_id="field_injury_delay",
         query="부상 치료가 먼저 필요한데 도핑검사를 미뤄달라고 하면 거부로 보일 수 있어?",
         expected_route="rag",
-        expected_sources=("field_response_manual", "kada_anti_doping_rules_2021_ko", "wada_isti_2021_ko_en"),
+        expected_sources=("field_response_manual", "kada_anti_doping_rules_2021_ko", "wada_isti_2023_en"),
         must_include_terms=("거부", "검사"),
     ),
     EvalCase(
@@ -74,7 +74,7 @@ DEFAULT_CASES = [
         case_id="field_leave_station",
         query="도핑검사 중 짐을 가지러 현장을 벗어나도 돼?",
         expected_route="rag",
-        expected_sources=("field_response_manual", "kada_anti_doping_rules_2021_ko", "wada_isti_2021_ko_en"),
+        expected_sources=("field_response_manual", "kada_anti_doping_rules_2021_ko", "wada_isti_2023_en"),
         must_include_terms=("현장", "이탈"),
     ),
     EvalCase(

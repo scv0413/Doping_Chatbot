@@ -17,7 +17,6 @@ DEFAULT_CHUNK_FILE_NAMES = (
     "chunks.jsonl",
     "manual_chunks.jsonl",
     "approved_manual_chunks.jsonl",
-    "wada_isti_2023_chunks.jsonl",
 )
 
 HUMAN_REVIEWED_SOURCE_SUFFIX = "_human_reviewed"

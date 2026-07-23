@@ -154,11 +154,11 @@ def test_reviewed_manual_evaluator_requires_official_source_in_answer_and_trace(
         "answer": (
             "## 근거\n"
             "- ISTI Korean Human-Reviewed Guide (`wada_isti_ko_human_reviewed:5.3.5:c0`)\n"
-            "  - 원문: `wada_isti_2021_ko_en`, p.83"
+            "  - 원문: `wada_isti_2023_en`, p.42"
         ),
         "source_ids": ["wada_isti_ko_human_reviewed"],
         "official_source_citations": [
-            {"source_id": "wada_isti_2021_ko_en", "page": 83}
+            {"source_id": "wada_isti_2023_en", "page": 42}
         ],
     }
 

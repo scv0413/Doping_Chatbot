@@ -167,12 +167,12 @@ if __name__ == "__main__":
 
     print_skipped_sample(
         skipped,
-        source_id="wada_isti_2021_ko_en",
+        source_id="wada_isti_2023_en",
         limit=10,
     )
     summarize_skipped_by_source_and_reason(skipped)
 
     summarize_skipped_page_numbers(
         skipped,
-        source_id="wada_isti_2021_ko_en",
+        source_id="wada_isti_2023_en",
     )

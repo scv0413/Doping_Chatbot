@@ -308,7 +308,7 @@ if __name__ == "__main__":
     records = load_source_manifest(Path("data/source_manifest.csv"))
 
     for record in records:
-        if record.source_id != "wada_isti_2021_ko_en":
+        if record.source_id != "wada_isti_2023_en":
             continue
 
         spans = inspect_pdf_spans(record, page_number=2)

@@ -102,13 +102,13 @@ def test_formatter_marks_english_source_as_korean_explanation() -> None:
         query="통지 절차를 설명해줘",
         decision=RouteDecision(route=ChatRoute.RAG, reason="rag"),
         retrieval_matches=[
-            RetrievalMatch(rank=1, chunk_id="wada_isti_2021_ko_en:p83:c0", distance=0.1,
-                metadata=RetrievalMetadata(source_id="wada_isti_2021_ko_en", title="ISTI", page=83, source_language="en"),
+            RetrievalMatch(rank=1, chunk_id="wada_isti_2023_en:p42:c0", distance=0.1,
+                metadata=RetrievalMetadata(source_id="wada_isti_2023_en", title="ISTI", page=42, source_language="en"),
                 text="The DCO shall establish the location of the selected Athlete.")
         ],
     )
     assert "WADA 영문 원문을 기준으로 한국어로 안내" in answer
-    assert "ISTI, p.83" in answer
+    assert "ISTI, p.42" in answer
 
 
 def test_formatter_cites_official_source_for_human_reviewed_manual() -> None:
@@ -123,15 +123,15 @@ def test_formatter_cites_official_source_for_human_reviewed_manual() -> None:
                 metadata=RetrievalMetadata(
                     source_id="wada_isti_ko_human_reviewed",
                     title="ISTI Korean Human-Reviewed Guide",
-                    page=83,
+                    page=42,
                     section="5.3.5",
-                    official_source_id="wada_isti_2021_ko_en",
-                    official_source_page=83,
+                    official_source_id="wada_isti_2023_en",
+                    official_source_page=42,
                 ),
                 text="검수된 한국어 안내문입니다.",
             )
         ],
     )
 
-    assert "ISTI Korean Human-Reviewed Guide, p.83" in answer
-    assert "원문: `wada_isti_2021_ko_en`, p.83" in answer
+    assert "ISTI Korean Human-Reviewed Guide, p.42" in answer
+    assert "원문: `wada_isti_2023_en`, p.42" in answer

@@ -4,7 +4,7 @@ from typing import Any
 
 import fitz
 
-from app.preprocess.ocr.fallback import PageExtractionResult, resolve_page_text
+from app.preprocess.ocr.fallback import PageExtractionResult
 from app.preprocess.sources.manifest import load_source_manifest
 from app.preprocess.sources.schemas import (
     DocumentChunk,
@@ -455,15 +455,8 @@ def is_low_quality_text(text: str, min_length: int = 100) -> bool:
     return False
 
 
-ISTI_SOURCE_ID = "wada_isti_2021_ko_en"
-
-def should_use_korean_ocr_fallback(metadata: DocumentMetadata, page_number: int) -> bool:
-    return metadata.source_id == ISTI_SOURCE_ID and page_number % 2 == 0
-
-
 def page_source_language(metadata: DocumentMetadata, page_number: int) -> Language:
-    if metadata.source_id == ISTI_SOURCE_ID:
-        return Language.EN if page_number % 2 else Language.KO
+    del page_number
     return metadata.language
 
 
@@ -535,16 +528,7 @@ def load_pdf_pages(
                 continue
 
             extraction_result = None
-            if should_use_korean_ocr_fallback(metadata, page_number):
-                extraction_result = resolve_page_text(
-                    page,
-                    text_layer_text=page_text,
-                    expects_korean=True,
-                )
-                if extraction_result.text is None:
-                    continue
-                page_text = extraction_result.text
-            elif is_low_quality_text(page_text):
+            if is_low_quality_text(page_text):
                 continue
 
             page_metadata = metadata.model_copy(
@@ -645,25 +629,7 @@ def inspect_pdf_page_loading(
                 continue
 
             extraction_result = None
-            if should_use_korean_ocr_fallback(metadata, page_number):
-                extraction_result = resolve_page_text(
-                    page,
-                    text_layer_text=page_text,
-                    expects_korean=True,
-                )
-                if extraction_result.text is None:
-                    results.append(
-                        {
-                            "page": page_number,
-                            "status": "skipped",
-                            "reason": extraction_result.quality_report.reason or "ocr_needs_review",
-                            "char_count": extraction_result.quality_report.char_count,
-                            **provenance_update(extraction_result),
-                        }
-                    )
-                    continue
-                page_text = extraction_result.text
-            elif is_low_quality_text(page_text):
+            if is_low_quality_text(page_text):
                 results.append(
                     {
                         "page": page_number,

@@ -8,7 +8,6 @@ def test_default_index_inputs_exclude_review_only_alignment_artifacts() -> None:
         "chunks.jsonl",
         "manual_chunks.jsonl",
         "approved_manual_chunks.jsonl",
-        "wada_isti_2023_chunks.jsonl",
     )
     assert "isti_section_alignment_candidates.jsonl" not in DEFAULT_CHUNK_FILE_NAMES
 
@@ -40,7 +39,7 @@ def test_indexer_accepts_complete_human_reviewed_manual_metadata() -> None:
                 "review_status": "approved",
                 "reviewed_by": "reviewer-001",
                 "reviewed_at": "2026-07-23",
-                "official_source_id": "wada_isti_2021_ko_en",
+                "official_source_id": "wada_isti_2023_en",
                 "official_source_page": 83,
             },
         }
