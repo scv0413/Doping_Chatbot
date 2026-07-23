@@ -13,7 +13,11 @@ from app.chat.domain.retrieval.vector_store import (
 )
 
 DEFAULT_BATCH_SIZE = 64
-DEFAULT_CHUNK_FILE_NAMES = ("chunks.jsonl", "manual_chunks.jsonl")
+DEFAULT_CHUNK_FILE_NAMES = (
+    "chunks.jsonl",
+    "manual_chunks.jsonl",
+    "approved_manual_chunks.jsonl",
+)
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
